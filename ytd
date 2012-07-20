@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+# Searches for videos cached by Firefox from youtube and 
+# similar sites and copies them to the specified destination 
+# directory or current directory.
+#
+# Files are named like file_descriptor.flv
+#
+# USAGE: ytd [dest-dir]
+
+DEST="$1"
+
+[[ -z "$DEST" ]] && DEST="."
+
+PID=$(ps -e | grep plugin-containe | awk '{print $1}')
+
+lsof -p $PID | grep '/tmp/Flash.*(deleted)' | awk '{print $4}' | tr -dc '0-9\n' | while read FD; do
+    cp "/proc/$PID/fd/$FD" "$DEST/$FD.flv"
+done

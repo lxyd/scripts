@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+
+# Downloads videos from rutube.ru using rtmpdump.
+# Autoresumes if needed
+#
+# USAGE: rutd <rutube-video-url>
+
+import sys
+import os
+import re
+import subprocess
+import xml.dom.minidom
+from xml.dom.minidom import Node
+from urllib import request
+
+mediaUrlRe = re.compile('^/(?P<app>.*/)(?P<playpath>[^/:]+\:.*)$')
+videoIdRe = re.compile('^\s*\<meta\s+property=\"og\:image\"\s+content=\"[^"]*\/(?P<id>[^"/-]+)-[^"/-]*\"')
+
+def doOnce(manifestUrl, outPath):
+    manifest = xml.dom.minidom.parse(request.urlopen(manifestUrl))
+
+    baseURL = ""
+    for node in manifest.getElementsByTagName("baseURL"):
+        for child in node.childNodes:
+            if child.nodeType == Node.TEXT_NODE:
+                baseURL = child.data
+
+    mediaURL = ""
+    for node in manifest.getElementsByTagName("media"):
+        mediaURL = node.getAttribute("url")
+
+    m = mediaUrlRe.match(mediaURL)
+
+    app = m.group("app")
+    playpath = m.group("playpath")
+
+    args = ["rtmpdump"]
+
+    args.extend([ "--rtmp",     baseURL ])
+    args.extend([ "--app",      app ])
+    args.extend([ "--swfVfy",   "http://rutube.ru/player.swf" ])
+    args.extend([ "--flv",      outPath ])
+    args.extend([ "--playpath", playpath ])
+    args.extend([ "--timeout",  "1" ])
+
+    # live translations. leave them aside for a while as they are incompatible with --resume
+    #if app == "vod/":
+    #    args.append("--live")
+
+    if os.path.isfile(outPath):
+        args.append("--resume")
+
+    return subprocess.call(args)
+
+
+if len(sys.argv) < 2 or not sys.argv[1]:
+    print("Please, specify the video URL")
+    exit(1)
+
+videoId = ""
+for line in request.urlopen(sys.argv[1]):
+    m = videoIdRe.match(str(line, encoding="utf-8"))
+    if m != None:
+        videoId = m.group("id")
+        break
+
+outPath = "out.flv"
+if len(sys.argv) >= 3:
+    outPath = sys.argv[2]
+
+manifestUrl = "http://bl.rutube.ru/%s.f4m" % videoId
+
+if os.path.isfile(outPath):
+    print ("File %s already exists. Trying to resume" % outPath)
+
+while doOnce(manifestUrl, outPath) != 0:
+    pass
+
