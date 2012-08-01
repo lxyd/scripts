@@ -26,7 +26,7 @@
     function onEvent(evt) {
         var el = evt.srcElement || evt.originalTarget;
 
-        if (el.nodeName === 'A') {
+        if (el.nodeName.toUpperCase() === 'A') {
             el.removeAttribute('target');
         }
 
