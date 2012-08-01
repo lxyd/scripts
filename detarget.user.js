@@ -3,7 +3,9 @@
 // @version    1
 // @description    Removes "target" attribute from links
 // @include    http://*/*
+// @include    https://*/*
 // @match    http://*/*
+// @match    https://*/*
 // @author   Alexey Dubinin
 // ==/UserScript==
 
@@ -11,17 +13,9 @@
     var script = document.createElement('script');
     script.setAttribute("type", "text/javascript");
     script.textContent = '(' + fn + ')(window, window.document);';
-    document.body.appendChild(script); // run the script
-    document.body.removeChild(script); // clean up
+    document.head.appendChild(script); // run the script
+    document.head.removeChild(script); // clean up
 })(document, function(window, document) {
-
-    function domReady(fun) {
-        if (document.readyState === "interactive" || document.readyState === "complete") {
-            fun();
-        } else {
-            document.addEventListener("DOMContentLoaded", fun, false);
-        }
-    }
 
     function onEvent(evt) {
         var el = evt.srcElement || evt.originalTarget;
@@ -33,10 +27,8 @@
         return true;
     }
 
-    domReady(function() {
-        document.addEventListener('click', onEvent);
-        document.addEventListener('focus', onEvent, true);
-        document.addEventListener('focusin', onEvent);
-    });
+    document.addEventListener('click', onEvent);
+    document.addEventListener('focus', onEvent, true);
+    document.addEventListener('focusin', onEvent);
 
 });
