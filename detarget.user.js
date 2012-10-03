@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name    Detarget
 // @version    1
-// @description    Removes "target" attribute from links
+// @description    Changes target="_blank" to target="_top" to prevent opening links in new tabs/windows
 // @include    http://*/*
 // @include    https://*/*
 // @match    http://*/*
@@ -20,8 +20,8 @@
     function onEvent(evt) {
         var el = evt.srcElement || evt.originalTarget;
 
-        if (el.nodeName.toUpperCase() === 'A') {
-            el.removeAttribute('target');
+        if (el.nodeName.toUpperCase() === 'A' && el.getAttribute('target') === '_blank') {
+            el.setAttribute('target', '_top');
         }
 
         return true;
