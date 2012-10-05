@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name    Paragrify Tabun
+// @name    Paragriphy Tabun
 // @version    3
 // @description    Преобразует br'ы в топиках табуна в параграфы
 // @include    http://tabun.everypony.ru/*
@@ -75,7 +75,7 @@ function wrap(el, back) {
 
 $(function() {
     $('#content .topic .info-top').append(
-        $('<A style="color:#AAA" href="#">Paragrify&nbsp;&para;</A>').bind('click', function() {
+        $('<A style="color:#AAA" href="#">Paragriphy&nbsp;&para;</A>').bind('click', function() {
 
             if (!styleAttached) {
                 $('<STYLE>').text('#content .topic .content P { text-indent: 15pt; margin: 10pt 0 0; text-align: justify }').appendTo(document.head);
