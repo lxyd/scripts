@@ -83,28 +83,6 @@ function wrap(el, back) {
     return false
 }
 
-function replaceDashes(node, starting, ending) {
-    starting = starting || typeof starting == 'undefined';
-    ending = ending || typeof ending == 'undefined';
-    if (node.children.length) {
-        for (var i = 0; i < node.children.length; i++) {
-            replaceDashes(
-                    node.children[i],
-                    starting && i == 0,
-                    ending && i == node.children.length - 1)
-        }
-    } else {
-        node.textContent = node.textContent.replace(/(\s?)-(\s?)/g,
-                function(match, l, r, offset, text) {
-                    if (!l && offset == 0)
-                        return starting ? "— " : match;
-                    if (!r && offset == text.length - match.length)
-                        return ending ? " —" : match;
-                    return l && r ? " — " : match;
-                });
-    }
-}
-
 function handleBlock(block, blackList) {
     $('*', block).not('PRE *').not(blackList).each(function() {
         if (isParaSplit(this)) {
@@ -124,6 +102,28 @@ function attachStyleIfNotYet(styleText) {
     if (!styleAttached) {
         $('<STYLE>').text(styleText).appendTo(document.head);
         styleAttached = true
+    }
+}
+
+function replaceDashes(node, starting, ending) {
+    starting = starting || starting == null;
+    ending = ending || ending == null;
+    if (node.children.length) {
+        for (var i = 0; i < node.children.length; i++) {
+            replaceDashes(
+                    node.children[i],
+                    starting && i == 0,
+                    ending && i == node.children.length - 1)
+        }
+    } else {
+        node.textContent = node.textContent.replace(/(\s?)-(\s?)/g,
+                function(match, l, r, offset, text) {
+                    if (!l && offset == 0)
+                        return starting ? "— " : match;
+                    if (!r && offset == text.length - match.length)
+                        return ending ? " —" : match;
+                    return l && r ? " — " : match;
+                });
     }
 }
 
