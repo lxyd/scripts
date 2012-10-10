@@ -132,7 +132,7 @@ $(function() {
         case 'tabun.everypony.ru':
             $('#content .topic .info-top').append(
                 $('<A style="color:#AAA" href="#">Paragriphy&nbsp;&para;</A>').bind('click', function() {
-                    attachStyleIfNotYet('#content .topic .content P { text-indent: 15pt; margin: 10pt 0 0; text-align: justify }');
+                    attachStyleIfNotYet('#content .topic .content P { text-indent: 15pt; margin: 5pt 0 0; text-align: justify }');
                     handleBlock($('.content', $(this).closest('.topic')), '.spoiler-title, .spoiler-body');
                     $(this).remove();
                     return false
@@ -142,7 +142,7 @@ $(function() {
         case 'stories.everypony.ru':
             $('#content .favesblock A:eq(2)').before(
                 $('<A style="color:#AAA; font-weight:bold" href="#">Paragriphy&nbsp;&para;</A>').bind('click', function() {
-                    attachStyleIfNotYet('#story P { text-indent: 15pt; margin: 10pt 0 0; text-align: justify }');
+                    attachStyleIfNotYet('#story P { text-indent: 15pt; margin: 5pt 0 0; text-align: justify }');
                     handleBlock($('#story'));
 
                     $('#story P').each(function() {
@@ -158,7 +158,7 @@ $(function() {
             $('.postbody .post-meta .profile-icons').prepend(
                 $('<LI>').append(
                     $('<A style="color:#666" href="#">Paragriphy&nbsp;&para;</A>').bind('click', function() {
-                        attachStyleIfNotYet('.postbody .content.paragriphyed P { text-indent: 15pt; margin: 10pt 0 0; text-align: justify; font-size: inherit; font-family: inherit }');
+                        attachStyleIfNotYet('.postbody .content.paragriphyed P { text-indent: 15pt; margin: 5pt 0 0; text-align: justify; font-size: inherit; font-family: inherit }');
                         var block = $('.content', $(this).closest('.postbody'));
                         handleBlock(block, '.bspt, .bspb');
                         block.addClass('paragriphyed');
