@@ -133,7 +133,7 @@ $(function() {
             $('#content .topic .info-top').append(
                 $('<A style="color:#AAA" href="#">Paragriphy&nbsp;&para;</A>').bind('click', function() {
                     attachStyleIfNotYet('#content .topic .content P { text-indent: 15pt; margin: 10pt 0 0; text-align: justify }');
-                    handleBlock($('.content', $(this).closest('.topic')));
+                    handleBlock($('.content', $(this).closest('.topic')), '.spoiler-title, .spoiler-body');
                     $(this).remove();
                     return false
                 })
