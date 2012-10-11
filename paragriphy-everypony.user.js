@@ -119,10 +119,10 @@ function replaceDashes(node, starting, ending) {
         node.textContent = node.textContent.replace(/(\s?)-(\s?)/g,
                 function(match, l, r, offset, text) {
                     if (!l && offset == 0)
-                        return starting ? "— " : match;
+                        return starting ? "— " : match; // "&mdash;&nbsp;"
                     if (!r && offset == text.length - match.length)
-                        return ending ? " —" : match;
-                    return l && r ? " — " : match;
+                        return ending ? " —" : match;   // "&nbsp;&mdash;"
+                    return l && r ? " — " : match       // "&nbsp;&mdash; "
                 });
     }
 }
