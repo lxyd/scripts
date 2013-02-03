@@ -119,10 +119,10 @@ function replaceDashes(node, starting, ending) {
         node.textContent = node.textContent.replace(/(\s?)-(\s?)/g,
                 function(match, l, r, offset, text) {
                     if (!l && offset == 0)
-                        return starting ? "— " : match; // "&mdash;&nbsp;"
+                        return starting ? "— " : match;
                     if (!r && offset == text.length - match.length)
-                        return ending ? " —" : match;   // "&nbsp;&mdash;"
-                    return l && r ? " — " : match       // "&nbsp;&mdash; "
+                        return ending ? " —" : match;
+                    return l && r ? " — " : match;
                 });
     }
 }
@@ -130,22 +130,22 @@ function replaceDashes(node, starting, ending) {
 $(function() {
     switch (window.location.host) {
         case 'tabun.everypony.ru':
-            $('#content .topic .info-top').append(
+            $('.topic .topic-header .topic-info').append(
                 $('<A style="color:#AAA" href="#">Paragriphy&nbsp;&para;</A>').bind('click', function() {
-                    attachStyleIfNotYet('#content .topic .content P { text-indent: 15pt; margin: 5pt 0 0; text-align: justify }');
-                    handleBlock($('.content', $(this).closest('.topic')), '.spoiler-title, .spoiler-body');
+                    attachStyleIfNotYet('.topic-content P { text-indent: 15pt; margin: 5pt 0 0; text-align: justify }');
+                    handleBlock($('.text', $(this).closest('.topic')), '.spoiler-title, .spoiler-body');
                     $(this).remove();
                     return false
                 })
             );
             break;
         case 'stories.everypony.ru':
-            $('#content .favesblock A:eq(2)').before(
-                $('<A style="color:#AAA; font-weight:bold" href="#">Paragriphy&nbsp;&para;</A>').bind('click', function() {
-                    attachStyleIfNotYet('#story P { text-indent: 15pt; margin: 5pt 0 0; text-align: justify }');
-                    handleBlock($('#story'));
+            $('.story-panel').append(
+                $('<A style="color:#AAA; float: right; font-weight:bold" href="#">Paragriphy&nbsp;&para;</A>').bind('click', function() {
+                    attachStyleIfNotYet('.chapter-text P { text-indent: 15pt; margin: 5pt 0 0; text-align: justify }');
+                    handleBlock($('.chapter-text'));
 
-                    $('#story P').each(function() {
+                    $('.chapter-text P').each(function() {
                         replaceDashes(this);
                     });
 
@@ -172,4 +172,3 @@ $(function() {
 })
 
 });
-
