@@ -131,7 +131,7 @@ $(function() {
     switch (window.location.host) {
         case 'tabun.everypony.ru':
             $('.topic .topic-header .topic-info').append(
-                $('<A style="color:#AAA" href="#">Paragriphy&nbsp;&para;</A>').bind('click', function() {
+                $('<A style="color:#AAA; margin-left: 5pt" href="#">Paragriphy&nbsp;&para;</A>').bind('click', function() {
                     attachStyleIfNotYet('.topic-content P { text-indent: 15pt; margin: 5pt 0 0; text-align: justify }');
                     handleBlock($('.text', $(this).closest('.topic')), '.spoiler-title, .spoiler-body');
                     $(this).remove();
