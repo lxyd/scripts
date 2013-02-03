@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Paragriphy Everypony
-// @version    4
+// @version    5
 // @description    Преобразует br'ы в параграфы в топиках табуна и форума everypony.ru, а также в рассказах на stories
 // @include    http://tabun.everypony.ru/*
 // @include    http://forum.everypony.ru/*
