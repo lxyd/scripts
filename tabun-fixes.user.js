@@ -139,10 +139,8 @@ $(function() {
     ls.hook.add('ls_comments_load_after', function() {
         fixTime('.comment-new .comment-date TIME');
         prepareComments('.comment-new');
-    });
 
-    // Комменты, которые я же только что и написал
-    ls.hook.add('ls_comments_add_after', function() {
+        // В том числе, свои:
         fixTime('.comment-self .comment-date TIME');
         prepareComments('.comment-self');
     });
