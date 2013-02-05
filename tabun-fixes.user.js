@@ -124,7 +124,12 @@ function prepareComments(elements) {
 
     $(elements).not('.' + consts.clsCommentProcessed).each(function() {
         var elComment = $(this)
-          , id = parseInt(elComment.attr('id').replace(/^comment_id_/, ''))
+
+        if (elComment.attr('id') == null) {
+            return; // мы - не в топике
+        }
+
+        var id = parseInt(elComment.attr('id').replace(/^comment_id_/, ''))
           , elWrapper = elComment.closest('.comment-wrapper');
 
         // Иногда бывает глюк с дублированием комментов
