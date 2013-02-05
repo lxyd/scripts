@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    1
-// @description    Исправляет некоторые "недостатки" табуна. Вернее, делает некоторые вещи более удобными лично мне :3 Время всегда ставится точное (никаких "пять минут назад" или "только что"), заминусованные до -5 комменты скрываются, а не делаются серыми, любые комменты можно скрыть вручную по одному, чтобы заткнуть музыку или не разрывать себе экран, например. Также добавил таймлайн комментов внизу (около широкого режима)
+// @version    2
+// @description    Исправляет некоторые "недостатки" табуна. Вернее, делает некоторые вещи более удобными лично мне :3 Время всегда ставится точное (никаких "пять минут назад" или "только что"), заминусованные до -5 комменты скрываются, а не делаются серыми, любые комменты можно скрыть вручную по одному, чтобы заткнуть музыку или не разрывать себе экран, например. Также добавил таймлайн комментов внизу (около широкого режима). UPD: добавлено сохранение скрытых комментов в sessionStorage, ускорение прокрутки до комментария, замена "в избранное" на звёздочку и потенциальное (НЕ ОТТЕСТИРОВАНО) костыльное исправление бага с дублирующимися комментами при обновлении.
 // @include    http://tabun.everypony.ru/*
 // @match    http://tabun.everypony.ru/*
 // @author   eeyup
@@ -40,9 +40,37 @@ var consts = {
 
 var btnCommentShow = '<A href="javascript:void(0)" onclick="return tabunFixes.unhideComment({{id}})">Раскрыть комментарий</A>'
   , btnCommentHide = '<LI class="{{clsBtnCommentHide}}"><A href="javascript:void(0)" onclick="return tabunFixes.hideComment({{id}})">Скрыть</A></LI>'
+  , icoFavorite = '<I class="icon-synio-favorite"></I>'
+  , hiddenCommentsStorageKey = 'tabun-fixes-hidden-comments-' + (/[0-9]+\.html/.exec(window.location.pathname)[0] || 'uni')
+  , storedHiddenComments = {}
   , removedComments = {}
   , chronology = []
   , visibleCommentsCount = chronology.length
+
+try {
+    (sessionStorage.getItem(hiddenCommentsStorageKey) || '').split(',').forEach(function(k) {
+        if (k) {
+            storedHiddenComments[parseInt(k)] = true;
+        }
+    })
+} catch(err) {
+    sessionStorage.removeItem(hiddenCommentsStorageKey);
+    storedHiddenComments = {};
+}
+
+function flushHiddenCommentsToStorage() {
+    var arr = []
+    for (var id in storedHiddenComments) {
+        if (Object.prototype.hasOwnProperty.call(storedHiddenComments, id)) {
+            arr.push(id);
+        }
+    }
+    if (arr.length) {
+        sessionStorage.setItem(hiddenCommentsStorageKey, arr.join(','));
+    } else {
+        sessionStorage.removeItem(hiddenCommentsStorageKey);
+    }
+}
 
 window.tabunFixes = {
     hideComment: function(id) {
@@ -53,6 +81,9 @@ window.tabunFixes = {
             removedComments[id] = elText.html();
             elComment.addClass(consts.clsCommentHidden);
             elText.html(simpleTemplate(btnCommentShow, consts, {id: id}));
+
+            storedHiddenComments[id] = true;
+            flushHiddenCommentsToStorage();
         }
     },
     unhideComment: function(id) {
@@ -61,6 +92,9 @@ window.tabunFixes = {
             $('.comment-content .text', elComment).html(removedComments[id]);
             delete removedComments[id];
             elComment.removeClass(consts.clsCommentHidden);
+
+            delete storedHiddenComments[id];
+            flushHiddenCommentsToStorage();
         }
     }
 }
@@ -76,29 +110,46 @@ function fixTime(elements) {
     })
 }
 
+function fixFavorite(elements) {
+    $(elements).each(function() {
+        $(this).html(icoFavorite);
+    })
+}
+
 function prepareComments(elements) {
     var ids = []
       , showAll = visibleCommentsCount == chronology.length;
 
     $(elements).not('.' + consts.clsCommentProcessed).each(function() {
         var elComment = $(this)
-          , id = parseInt(elComment.attr('id').replace(/^comment_id_/, ''));
+          , id = parseInt(elComment.attr('id').replace(/^comment_id_/, ''))
+          , elWrapper = elComment.closest('.comment-wrapper');
 
-        ids.push(id);
+        // Иногда бывает глюк с дублированием комментов
+        // В таком случае дубликат надо убрать
+        if (elWrapper.attr('id') == elWrapper.prev().attr('id')) {
 
-        elComment.addClass(consts.clsCommentProcessed);
+            elWrapper.remove();
 
-        $('.comment-info', elComment).append(
-            simpleTemplate(btnCommentHide, consts, { id: id })
-        );
+        } else {
 
-        if (elComment.hasClass('comment-bad')) {
-            tabunFixes.hideComment(id);
-        }
+            ids.push(id);
 
-        if (!showAll) {
-            // Если уже и сейчас не все комменты показаны, то новодобавленные точно надо скрыть
-            elComment.hide();
+            elComment.addClass(consts.clsCommentProcessed);
+
+            $('.comment-info', elComment).append(
+                simpleTemplate(btnCommentHide, consts, { id: id })
+            );
+
+            if (elComment.hasClass('comment-bad') || storedHiddenComments[id]) {
+                tabunFixes.hideComment(id);
+            }
+
+            if (!showAll) {
+                // Если уже и сейчас не все комменты показаны, то новодобавленные точно надо скрыть
+                elComment.hide();
+            }
+
         }
     });
 
@@ -125,6 +176,13 @@ $(function() {
         '#{{idChronologyPlus}} { margin-right:5px } ' +
         '#{{idChronologyMinus}} { margin-left:5px } ' +
 
+        '.comment-info .favourite .icon-synio-favorite { width:11px; height:11px; background-position:0px -37px }' +
+        '.comment-info .favourite.active .icon-synio-favorite { background-position:0px -65px }' +
+        '.topic-info .favourite .icon-synio-favorite { width:11px; height:11px; background-position:0px -37px }' +
+        '.topic-info .favourite.active .icon-synio-favorite { background-position:0px -65px }' +
+        //'.topic-info .favourite .icon-synio-favorite { width:17px;height:17px; background-position:0px -77px }' +
+        //'.topic-info .favourite.active .icon-synio-favorite { background-position:-17px -77px }' +
+
         ''
 
         , consts)
@@ -133,21 +191,34 @@ $(function() {
     // Комменты/посты, уже открытые на странице
     fixTime('.comment .comment-date TIME');
     fixTime('.topic .topic-info-date TIME');
+    fixFavorite('.comment-info .favourite');
+    fixFavorite('.topic-info .favourite');
     prepareComments('.comment');
 
+
     // Комменты, подгруженные динамически
-    ls.hook.add('ls_comments_load_after', function() {
+    ls.hook.add('ls_comment_inject_after', function() {
+        fixTime('.comment-date TIME', this);
+        fixFavorite('.comment-info .favourite', this)
+        prepareComments('.comment', this);
+    });
+
+    // Комменты, подгруженные динамически
+    /*ls.hook.add('ls_comments_load_after', function() {
         fixTime('.comment-new .comment-date TIME');
+        fixFavorite('.comment-new .comment-info .favourite');
         prepareComments('.comment-new');
 
         // В том числе, свои:
         fixTime('.comment-self .comment-date TIME');
+        fixFavorite('.comment-self .comment-info .favourite');
         prepareComments('.comment-self');
-    });
+    });*/
 
     // Посты, подгруженные с помощью кнопки "получить ещё посты"
     ls.hook.add('ls_userfeed_get_more_after', function() {
         fixTime('.topic .topic-info-date TIME');
+        fixFavorite('.topic-info .favourite');
     });
 
     // Меняем захардкоженное время прокрутки комментов с 1000 до 300 (приходится переписывать функцию целиком)
