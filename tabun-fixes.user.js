@@ -141,6 +141,12 @@ $(function() {
         prepareComments('.comment-new');
     });
 
+    // Комменты, которые я же только что и написал
+    ls.hook.add('ls_comments_add_after', function() {
+        fixTime('.comment-self')
+        prepareComments('.comment-self');
+    });
+
     // Посты, подгруженные с помощью кнопки "получить ещё посты"
     ls.hook.add('ls_userfeed_get_more_after', function() {
         fixTime('.topic .topic-info-date TIME');
