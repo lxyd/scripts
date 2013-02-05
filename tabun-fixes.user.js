@@ -41,7 +41,7 @@ var consts = {
 var btnCommentShow = '<A href="javascript:void(0)" onclick="return tabunFixes.unhideComment({{id}})">Раскрыть комментарий</A>'
   , btnCommentHide = '<LI class="{{clsBtnCommentHide}}"><A href="javascript:void(0)" onclick="return tabunFixes.hideComment({{id}})">Скрыть</A></LI>'
   , icoFavorite = '<I class="icon-synio-favorite"></I>'
-  , hiddenCommentsStorageKey = 'tabun-fixes-hidden-comments-' + (/[0-9]+\.html/.exec(window.location.pathname)[0] || 'uni')
+  , hiddenCommentsStorageKey = 'tabun-fixes-hidden-comments-' + (/[0-9]+\.html/.exec(window.location.pathname) || ['uni'])[0]
   , storedHiddenComments = {}
   , removedComments = {}
   , chronology = []
@@ -202,18 +202,6 @@ $(function() {
         fixFavorite('.comment-info .favourite', this)
         prepareComments('.comment', this);
     });
-
-    // Комменты, подгруженные динамически
-    /*ls.hook.add('ls_comments_load_after', function() {
-        fixTime('.comment-new .comment-date TIME');
-        fixFavorite('.comment-new .comment-info .favourite');
-        prepareComments('.comment-new');
-
-        // В том числе, свои:
-        fixTime('.comment-self .comment-date TIME');
-        fixFavorite('.comment-self .comment-info .favourite');
-        prepareComments('.comment-self');
-    });*/
 
     // Посты, подгруженные с помощью кнопки "получить ещё посты"
     ls.hook.add('ls_userfeed_get_more_after', function() {
