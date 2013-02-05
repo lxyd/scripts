@@ -44,7 +44,9 @@ var btnCommentShow = '<A href="javascript:void(0)" onclick="return tabunFixes.un
   , hiddenCommentsStorageKey = 'tabun-fixes-hidden-comments-' + (/[0-9]+\.html/.exec(window.location.pathname) || ['uni'])[0]
   , storedHiddenComments = {}
   , removedComments = {}
+  , duplicatedCommentsToRemove = []
   , chronology = []
+  , commentsIds = {}
   , visibleCommentsCount = chronology.length
 
 try {
@@ -127,11 +129,14 @@ function prepareComments(elements) {
 
         // Иногда бывает глюк с дублированием комментов
         // В таком случае дубликат надо убрать
-        if (elWrapper.attr('id') == elWrapper.prev().attr('id')) {
+        if (commentsIds[id]) {
 
             elWrapper.remove();
+            duplicatedCommentsToRemove.push(id);
 
         } else {
+
+            commentsIds[id] = true;
 
             ids.push(id);
 
@@ -201,6 +206,15 @@ $(function() {
         fixTime('.comment-date TIME', this);
         fixFavorite('.comment-info .favourite', this)
         prepareComments('.comment', this);
+    });
+
+    // Уберём удалённые дубликаты из количества новых
+    ls.hook.add('ls_comments_load_after', function() {
+        ls.comments.aCommentNew = ls.comments.aCommentNew.filter(function(id) {
+            return duplicatedCommentsToRemove.indexOf(parseInt(id)) == -1;
+        });
+        ls.comments.setCountNewComment(ls.comments.aCommentNew.length);
+        duplicatedCommentsToRemove = [];
     });
 
     // Посты, подгруженные с помощью кнопки "получить ещё посты"
