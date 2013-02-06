@@ -101,13 +101,24 @@ window.tabunFixes = {
     }
 }
 
+var months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
 function fixTime(elements) {
     $(elements).each(function() {
         var self = $(this)
-          , title = self.attr('title');
+          , title = self.attr('title')
+          , dt = self.attr('datetime')
 
         if (title) {
             self.text(title);
+        } else if (dt) {
+            var arr = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(dt);
+            self.text(simpleTemplate('{{d}} {{MMMM}} {{yyyy}}, {{HH}}:{{mm}}', {
+                yyyy: arr[1],
+                MMMM: months[parseInt(arr[2])-1],
+                d: parseInt(arr[3]),
+                HH: arr[4],
+                mm: arr[5]
+            }));
         }
     })
 }
