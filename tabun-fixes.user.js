@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    2
-// @description    Исправляет некоторые "недостатки" табуна. Вернее, делает некоторые вещи более удобными лично мне :3 Время всегда ставится точное (никаких "пять минут назад" или "только что"), заминусованные до -5 комменты скрываются, а не делаются серыми, любые комменты можно скрыть вручную по одному, чтобы заткнуть музыку или не разрывать себе экран, например. Также добавил таймлайн комментов внизу (около широкого режима). UPD: добавлено сохранение скрытых комментов в sessionStorage, ускорение прокрутки до комментария, замена "в избранное" на звёздочку и потенциальное (НЕ ОТТЕСТИРОВАНО) костыльное исправление бага с дублирующимися комментами при обновлении.
+// @version    3
+// @description    Возможность выбрать формат дат, замена кнопки "в избранное" на звёздочку, добавление таймлайна комментов и костыльное исправление бага с дублирующимися комментами при обновлении.
 // @include    http://tabun.everypony.ru/*
 // @match    http://tabun.everypony.ru/*
 // @author   eeyup
@@ -15,249 +15,255 @@
     document.body.removeChild(script); // clean up
 })(document, function(window, document) {
 
-function simpleTemplate(template/*, objects*/) {
-    var objects = Array.prototype.slice.call(arguments, 1);
-    return template.replace(/{{(.*?)}}/g, function(_, name) {
-        var res;
-        if (!objects.some(function(o) { res=o[name]; return name in o } )) {
-            throw new Error("Value not found");
-        }
-        return res;
-    });
+
+//
+// КОНФИГУРАЦИЯ
+//
+// Чтобы выключить функцию, замените значение соответствующей строке на false
+// И наоборот, чтобы включить, заменить на true (кроме changeDateFormat, тут надо вводить формат даты)
+//
+var config = {
+    hideHideButton: true, /* Показывать кнопку "Скрыть" только при наведении */
+    showFavoriteAsIco: true, /* Заменить "В избранное" на звёздочку */
+    changeDateFormat: false, /* Если надо, впишите сюда строку форматирования, например, 'dd.MM.yyyy HH:mm' */
+    localTime: true, /* Показывать локальное время вместо московского */
+    relativeTime: false, /* Для тех, кто соскучился по времени в духе "только что" и "5 минут назад" */
+    fixCommentDuplication: true, /* Включить костыль для редкого бага с дублированием динамически подгруженных комментов */
+    addHistoryTimeline: true, /* Добавить скроллер по истории появления комментариев */
 }
 
-var consts = {
-    clsCommentHidden: 'tabun-fixes-hidden',
-    clsCommentProcessed: 'tabun-fixes-processed',
-    clsBtnCommentHide: 'tabun-fixes-btnhide',
 
-    idChronology: 'tabun-fixes-chronology',
-    idChronologyPlus: 'tabun-fixes-chronology-plus',
-    idChronologyMinus: 'tabun-fixes-chronology-minus',
-    idChronologyTimeline: 'tabun-fixes-chronology-timeline',
-    idChronologySlider: 'tabun-fixes-chronology-slider',
+//
+// 1. скрытие кнопки "Скрыть"
+//
+if (config.hideHideButton) {
+    (function() {
+        $('<STYLE>').text(
+            '.comment .comment-info .comment-hide { display:none }                ' +
+            '.comment:hover .comment-info .comment-hide { display:block }         ' +
+            '.comment.{{clsCommentHidden}} .{{clsBtnCommentHide}} { display:none }'
+        ).appendTo(document.head);
+    })();
 }
 
-var btnCommentShow = '<A href="javascript:void(0)" onclick="return tabunFixes.unhideComment({{id}})">Раскрыть комментарий</A>'
-  , btnCommentHide = '<LI class="{{clsBtnCommentHide}}"><A href="javascript:void(0)" onclick="return tabunFixes.hideComment({{id}})">Скрыть</A></LI>'
-  , icoFavorite = '<I class="icon-synio-favorite"></I>'
-  , hiddenCommentsStorageKey = 'tabun-fixes-hidden-comments-' + (/[0-9]+\.html/.exec(window.location.pathname) || ['uni'])[0]
-  , storedHiddenComments = {}
-  , removedComments = {}
-  , duplicatedCommentsToRemove = []
-  , chronology = []
-  , commentsIds = {}
-  , visibleCommentsCount = chronology.length
+//
+// 2. отображение "В избранное" в виде пиктограммы
+//
+if (config.showFavoriteAsIco) {
+    (function() {
 
-try {
-    (sessionStorage.getItem(hiddenCommentsStorageKey) || '').split(',').forEach(function(k) {
-        if (k) {
-            storedHiddenComments[parseInt(k)] = true;
+        var clsProcessed = 'tabun-fixes-processed';
+
+        $('<STYLE>').text(
+            '.comment-info .favourite .icon-synio-favourite { width:11px; height:11px; background-position:0px -37px }' +
+            '.comment-info .favourite.active .icon-synio-favourite { background-position:0px -65px }' +
+            '.topic-info .favourite .icon-synio-favourite { width:11px; height:11px; background-position:0px -37px }' +
+            '.topic-info .favourite.active .icon-synio-favourite { background-position:0px -65px }'
+        ).appendTo(document.head);
+
+        function process(elements) {
+            $(elements)
+                .html('<i class="icon-synio-favourite"></i>')
+                .attr('title', 'Избранное')
+                .addClass(clsProcessed);
         }
-    })
-} catch(err) {
-    sessionStorage.removeItem(hiddenCommentsStorageKey);
-    storedHiddenComments = {};
+
+        // Комменты/посты, уже открытые на странице
+        $(function() {
+            process('.comment-info .favourite');
+            process('.topic-info .favourite');
+        });
+
+        // Комменты, подгруженные динамически
+        ls.hook.add('ls_comment_inject_after', function() {
+            process('.comment-info .favourite', this);
+        });
+
+        // Посты, подгруженные с помощью кнопки "получить ещё посты"
+        ls.hook.add('ls_userfeed_get_more_after', function() {
+            process($('.topic-info .favourite').not('.' + clsProcessed));
+        });
+
+    })();
 }
 
-function flushHiddenCommentsToStorage() {
-    var arr = []
-    for (var id in storedHiddenComments) {
-        if (Object.prototype.hasOwnProperty.call(storedHiddenComments, id)) {
-            arr.push(id);
-        }
-    }
-    if (arr.length) {
-        sessionStorage.setItem(hiddenCommentsStorageKey, arr.join(','));
-    } else {
-        sessionStorage.removeItem(hiddenCommentsStorageKey);
-    }
+//
+// 3. форматирование дат
+//
+
+// Если мы в том же часовом поясе, что и Москва, то нам можно не заморачиваться с поясами
+if (new Date().getTimezoneOffset() == -240) {
+    config.localTime = false;
 }
 
-window.tabunFixes = {
-    hideComment: function(id) {
-        if (removedComments[id] == null) {
-            var elComment = $('#comment_id_' + id)
-              , elText = $('.comment-content .text', elComment);
+if (config.changeDateFormat || config.localTime || config.relativeTime) {
+    (function() {
+        /**
+         * Переформатирует дату/время, представленную в виде строки isoDateTime, например 2013-02-06T23:01:33+04:00
+         * в требуемый формат. Допустимые элементы формата:
+         * - yyyy, yy - год (четыре или две цифры)
+         * - M, MM, MMM, MMMM - месяц (одна/две цифры или сокращённое/полное название)
+         * - d, dd - день
+         * - H, HH - час
+         * - m, mm - минуты
+         * - s, ss - секунды
+         *
+         * @param strDate - дата в формате isoDateTime
+         * @param strFormat - строка формата
+         * @param bToLocal - конвертировать ли дату в локальную из той зоны, в которой она представлена
+         *
+         * @return переформатированные дату/время
+         */
+        var reformatDateTime = (function() {
+            var aMonthsLong = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
+              , aMonthsShort = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек']
 
-            removedComments[id] = elText.html();
-            elComment.addClass(consts.clsCommentHidden);
-            elText.html(simpleTemplate(btnCommentShow, consts, {id: id}));
+            function padIntWithZero(x) { return x < 10 ? '0'+x : ''+x }
+            
+            return function(strDate, strFormat, bToLocalDate) {
+                var arr;
+                if (!bToLocalDate) {
+                    arr = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/.exec(strDate);
+                } else {
+                    var d = new Date(strDate);
+                    arr = [
+                        null,
+                        '' + d.getFullYear(),
+                        padIntWithZero(d.getMonth() + 1),
+                        padIntWithZero(d.getDate()),
+                        padIntWithZero(d.getHours()),
+                        padIntWithZero(d.getMinutes()),
+                        padIntWithZero(d.getSeconds()),
+                        padIntWithZero(d.getMilliseconds()),
+                    ];
+                }
+                return strFormat.replace(/yyyy|yy|MMMM|MMM|MM|M|dd|d|HH|H|mm|m|ss|s/g, function(pattern) {
+                    switch(pattern) {
+                        case 'yyyy': return arr[1];
+                        case 'yy'  : return arr[1].substring(2);
+                        case 'MMMM': return aMonthsLong[parseInt(arr[2])-1];
+                        case 'MMM' : return aMonthsShort[parseInt(arr[2])-1];
+                        case 'MM'  : return arr[2];
+                        case 'M'   : return parseInt(arr[2]);
+                        case 'dd'  : return arr[3];
+                        case 'd'   : return parseInt(arr[3]);
+                        case 'HH'  : return arr[4];
+                        case 'H'   : return parseInt(arr[4]);
+                        case 'mm'  : return arr[5];
+                        case 'm'   : return parseInt(arr[5]);
+                        case 'ss'  : return arr[6];
+                        case 's'   : return parseInt(arr[6]);
+                    }
+                });
+            }
+        })();
 
-            storedHiddenComments[id] = true;
-            flushHiddenCommentsToStorage();
+        var defaultDateFormat = 'd MMMM yyyy, HH:mm'
+          , clsProcessed = 'tabun-fixes-processed';
+
+        function process(elements) {
+            $(elements).each(function() {
+                var dt = this.getAttribute('datetime')
+
+                if (config.changeDateFormat || config.localTime) {
+                    dt = reformatDateTime(dt, config.changeDateFormat || defaultDateFormat, config.localTime);
+                }
+                if (config.relativeTime) {
+                    this.innerHTML = this.getAttribute('title');
+                    this.setAttribute('title', dt);
+                } else {
+                    this.innerHTML = dt;
+                }
+            }).addClass(clsProcessed);
         }
-    },
-    unhideComment: function(id) {
-        if (removedComments[id] != null) {
-            var elComment = $('#comment_id_' + id);
-            $('.comment-content .text', elComment).html(removedComments[id]);
-            delete removedComments[id];
-            elComment.removeClass(consts.clsCommentHidden);
 
-            delete storedHiddenComments[id];
-            flushHiddenCommentsToStorage();
-        }
-    }
+        // Комменты/посты, уже открытые на странице
+        $(function() {
+            process('.comment .comment-date TIME');
+            process('.topic .topic-info-date TIME');
+        });
+
+        // Комменты, подгруженные динамически
+        ls.hook.add('ls_comment_inject_after', function() {
+            process('.comment-date TIME', this);
+        });
+
+        // Посты, подгруженные с помощью кнопки "получить ещё посты"
+        ls.hook.add('ls_userfeed_get_more_after', function() {
+            process($('.topic .topic-info-date TIME').not('.'+clsProcessed));
+        });
+
+    })();
 }
 
-var months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-function fixTime(elements) {
-    $(elements).each(function() {
-        var self = $(this)
-          //, title = self.attr('title')
-          , dt = self.attr('datetime')
+//
+// 4. Фикс дублирования комментов
+//
+if (config.fixCommentDuplication) {
+    (function() {
 
-        //if (title) {
-        //    self.text(title);
-        //} else if (dt) {
-        if (dt) {
-            var arr = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(dt);
-            self.text(simpleTemplate('{{d}} {{MMMM}} {{yyyy}}, {{HH}}:{{mm}}', {
-                yyyy: arr[1],
-                MMMM: months[parseInt(arr[2])-1],
-                d: parseInt(arr[3]),
-                HH: arr[4],
-                mm: arr[5]
-            }));
-        }
-    })
-}
+        var commentsIds = {}
+          , removed = []
 
-function fixFavorite(elements) {
-    $(elements).each(function() {
-        $(this).html(icoFavorite).attr('title', 'Избранное');
-    })
-}
+        // Комменты, подгруженные динамически
+        ls.hook.add('ls_comment_inject_after', function() {
+            var id = this.attr('id').replace('comment_wrapper_id_', '')
 
-function prepareComments(elements) {
-    var ids = []
-      , showAll = visibleCommentsCount == chronology.length;
-
-    $(elements).not('.' + consts.clsCommentProcessed).each(function() {
-        var elComment = $(this)
-
-        if (elComment.attr('id') == null) {
-            return; // мы - не в топике
-        }
-
-        var id = parseInt(elComment.attr('id').replace(/^comment_id_/, ''))
-          , elWrapper = elComment.closest('.comment-wrapper');
-
-        // Иногда бывает глюк с дублированием комментов
-        // В таком случае дубликат надо убрать
-        if (commentsIds[id]) {
-
-            elWrapper.remove();
-            duplicatedCommentsToRemove.push(id);
-
-        } else {
+            if (commentsIds[id]) {
+                this.remove();
+                removed.push(id);
+            }
 
             commentsIds[id] = true;
 
-            ids.push(id);
+        }, 0 /*highest priority*/);
 
-            elComment.addClass(consts.clsCommentProcessed);
+        // Уберём удалённые дубликаты из количества новых
+        ls.hook.add('ls_comments_load_after', function() {
+            ls.comments.aCommentNew = ls.comments.aCommentNew.filter(function(id) {
+                return removed.indexOf(parseInt(id)) == -1;
+            });
+            ls.comments.setCountNewComment(ls.comments.aCommentNew.length);
+            removed = [];
+        });
 
-            $('.comment-info', elComment).append(
-                simpleTemplate(btnCommentHide, consts, { id: id })
-            );
+        $(function() {
+            $('.comment').each(function() {
+                commentsIds[this.getAttribute('id').replace('comment_id_', '')] = true;
+            });
+        });
 
-            if (elComment.hasClass('comment-bad') || storedHiddenComments[id]) {
-                tabunFixes.hideComment(id);
-            }
-
-            if (!showAll) {
-                // Если уже и сейчас не все комменты показаны, то новодобавленные точно надо скрыть
-                elComment.hide();
-            }
-
-        }
-    });
-
-    ids.sort();
-    Array.prototype.push.apply(chronology, ids);
-    if (showAll) {
-        visibleCommentsCount = chronology.length;
-    }
+    })();
 }
 
-$(function() {
+//
+// 5. Добавляем таймлайн
+//
+if ($('#comments').length && config.addHistoryTimeline) {
+    (function() {
 
-    // Стили
-    $('<STYLE>').text(simpleTemplate(
+        var chronology = []
+          , visibleCommentsCount
 
-        '.comment.comment-bad .comment-content { opacity:1 }                  ' +
-        '.{{clsBtnCommentHide}} { display:none }                              ' +
-        '.{{clsBtnCommentHide}} A { color:#DDD }                              ' +
-        '.comment:hover .{{clsBtnCommentHide}} { display:block }              ' +
-        '.comment.{{clsCommentHidden}} .{{clsBtnCommentHide}} { display:none }' +
+        var idChronology = 'tabun-fixes-chronology'
+          , idChronologyPlus = 'tabun-fixes-chronology-plus'
+          , idChronologyMinus = 'tabun-fixes-chronology-minus'
+          , idChronologyTimeline = 'tabun-fixes-chronology-timeline'
+          , idChronologySlider = 'tabun-fixes-chronology-slider';
 
-        '#{{idChronologyTimeline}} { display:inline-block; position:relative; overflow:visible; height:5px; width:100px; margin:3px 10px; border-radius:2px; background:#CCCCCF } ' +
-        '#{{idChronologySlider}} { position:absolute; top:-3px; left:0; height:11px; width:10px; border-radius:2px; background:#889; cursor:pointer } ' +
-        '#{{idChronologyPlus}} { margin-right:5px } ' +
-        '#{{idChronologyMinus}} { margin-left:5px } ' +
+        $('<STYLE>').text(
+            '#' + idChronologyTimeline + ' { display:inline-block; position:relative; overflow:visible; height:5px; width:100px; margin:3px 10px; border-radius:2px; background:#CCCCCF } ' +
+            '#' + idChronologySlider + ' { position:absolute; top:-3px; left:0; height:11px; width:10px; border-radius:2px; background:#889; cursor:pointer } ' +
+            '#' + idChronologyPlus + ' { margin-right:5px } ' +
+            '#' + idChronologyMinus + ' { margin-left:5px } '
+        ).appendTo(document.head);
 
-        '.comment-info .favourite .icon-synio-favorite { width:11px; height:11px; background-position:0px -37px }' +
-        '.comment-info .favourite.active .icon-synio-favorite { background-position:0px -65px }' +
-        '.topic-info .favourite .icon-synio-favorite { width:11px; height:11px; background-position:0px -37px }' +
-        '.topic-info .favourite.active .icon-synio-favorite { background-position:0px -65px }' +
-        //'.topic-info .favourite .icon-synio-favorite { width:17px;height:17px; background-position:0px -77px }' +
-        //'.topic-info .favourite.active .icon-synio-favorite { background-position:-17px -77px }' +
-
-        ''
-
-        , consts)
-    ).appendTo(document.head);
-
-    // Комменты/посты, уже открытые на странице
-    fixTime('.comment .comment-date TIME');
-    fixTime('.topic .topic-info-date TIME');
-    fixFavorite('.comment-info .favourite');
-    fixFavorite('.topic-info .favourite');
-    prepareComments('.comment');
-
-
-    // Комменты, подгруженные динамически
-    ls.hook.add('ls_comment_inject_after', function() {
-        fixTime('.comment-date TIME', this);
-        fixFavorite('.comment-info .favourite', this)
-        prepareComments('.comment', this);
-    });
-
-    // Уберём удалённые дубликаты из количества новых
-    ls.hook.add('ls_comments_load_after', function() {
-        ls.comments.aCommentNew = ls.comments.aCommentNew.filter(function(id) {
-            return duplicatedCommentsToRemove.indexOf(parseInt(id)) == -1;
-        });
-        ls.comments.setCountNewComment(ls.comments.aCommentNew.length);
-        duplicatedCommentsToRemove = [];
-    });
-
-    // Посты, подгруженные с помощью кнопки "получить ещё посты"
-    ls.hook.add('ls_userfeed_get_more_after', function() {
-        fixTime('.topic .topic-info-date TIME');
-        fixFavorite('.topic-info .favourite');
-    });
-
-    // Меняем захардкоженное время прокрутки комментов с 1000 до 300 (приходится переписывать функцию целиком)
-    ls.comments.scrollToComment = function (idComment){
-        $.scrollTo('#comment_id_'+idComment,300,{offset:-250});
-        if(this.iCurrentViewComment){
-            $('#comment_id_'+this.iCurrentViewComment).removeClass(this.options.classes.comment_current);
-        }
-        $('#comment_id_'+idComment).addClass(this.options.classes.comment_current);
-        this.iCurrentViewComment=idComment;
-    }
-
-    // Добавляем кнопки управления таймлайном
-    if ($('#comments').length) {
         var startScrollTimeout = null;
 
         var updateSliderPosition = function() {
             var pos
-              , elTimeline = $('#' + consts.idChronologyTimeline)
-              , elSlider = $('#' + consts.idChronologySlider)
+              , elTimeline = $('#' + idChronologyTimeline)
+              , elSlider = $('#' + idChronologySlider)
 
             if (chronology.length < 1) {
                 pos = 1;
@@ -296,7 +302,7 @@ $(function() {
         };
 
         function onMouseMove(ev) {
-            var elTimeline = $('#' + consts.idChronologyTimeline)
+            var elTimeline = $('#' + idChronologyTimeline)
               , pos = ev.pageX - elTimeline.offset().left;
 
             if (pos < 0) {
@@ -328,37 +334,57 @@ $(function() {
             return false;
         };
 
-        $('#widemode').prepend('<BR/>').prepend(
-            $('<SPAN>').attr('id', consts.idChronology).append(
-                $('<A href="javascript:void(0)">-1</A>').attr('id', consts.idChronologyPlus).click(function() {
-                    setVisibleCommentsCount(visibleCommentsCount - 1);
-                    scrollToLastVisibleComment();
-                })
-            ).append(
-                $('<DIV>').attr('id', consts.idChronologyTimeline).append(
-                    $('<DIV>').attr('id', consts.idChronologySlider).on('mousedown', function() {
-                        $(document).on('mousemove', onMouseMove).on('mouseup', onMouseUp);
+        // Комменты, подгруженные динамически
+        ls.hook.add('ls_comment_inject_after', function() {
+            var showAll = visibleCommentsCount == chronology.length;
+            var id = parseInt($('.comment', this).attr('id').replace('comment_id_', ''));
+            chronology.push(id);
+            if (showAll) {
+                visibleCommentsCount = chronology.length;
+            }
+        });
+
+        $(function() {
+
+            chronology = Array.prototype.map.call($('.comment'), function(c) {
+                return parseInt(c.getAttribute('id').replace('comment_id_', ''));
+            });
+
+            chronology.sort();
+            visibleCommentsCount = chronology.length;
+
+            $('#widemode').prepend('<BR/>').prepend(
+                $('<SPAN>').attr('id', idChronology).append(
+                    $('<A href="javascript:void(0)">-1</A>').attr('id', idChronologyPlus).click(function() {
+                        setVisibleCommentsCount(visibleCommentsCount - 1);
+                        scrollToLastVisibleComment();
+                    })
+                ).append(
+                    $('<DIV>').attr('id', idChronologyTimeline).append(
+                        $('<DIV>').attr('id', idChronologySlider).on('mousedown', function() {
+                            $(document).on('mousemove', onMouseMove).on('mouseup', onMouseUp);
+                            return false;
+                        })
+                    ).on('click', function(ev) {
+                        var elTimeline = $(this)
+                          , pos = ev.pageX - elTimeline.offset().left;
+
+                        setVisibleCommentsCount(Math.round(chronology.length * pos / elTimeline.width()));
+                        scrollToLastVisibleComment();
+
                         return false;
                     })
-                ).on('click', function(ev) {
-                    var elTimeline = $(this)
-                      , pos = ev.pageX - elTimeline.offset().left;
+                ).append(
+                    $('<A href="javascript:void(0)">+1</A>').attr('id', idChronologyMinus).click(function() {
+                        setVisibleCommentsCount(visibleCommentsCount + 1);
+                        scrollToLastVisibleComment();
+                    })
+                )
+            );
+            updateSliderPosition();
 
-                    setVisibleCommentsCount(Math.round(chronology.length * pos / elTimeline.width()));
-                    scrollToLastVisibleComment();
-
-                    return false;
-                })
-            ).append(
-                $('<A href="javascript:void(0)">+1</A>').attr('id', consts.idChronologyMinus).click(function() {
-                    setVisibleCommentsCount(visibleCommentsCount + 1);
-                    scrollToLastVisibleComment();
-                })
-            )
-        );
-        updateSliderPosition();
-    }
-
-})
+        });
+    })();
+}
 
 });
