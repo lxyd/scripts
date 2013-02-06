@@ -105,12 +105,13 @@ var months = ['января','февраля','марта','апреля','ма�
 function fixTime(elements) {
     $(elements).each(function() {
         var self = $(this)
-          , title = self.attr('title')
+          //, title = self.attr('title')
           , dt = self.attr('datetime')
 
-        if (title) {
-            self.text(title);
-        } else if (dt) {
+        //if (title) {
+        //    self.text(title);
+        //} else if (dt) {
+        if (dt) {
             var arr = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(dt);
             self.text(simpleTemplate('{{d}} {{MMMM}} {{yyyy}}, {{HH}}:{{mm}}', {
                 yyyy: arr[1],
@@ -125,7 +126,7 @@ function fixTime(elements) {
 
 function fixFavorite(elements) {
     $(elements).each(function() {
-        $(this).html(icoFavorite);
+        $(this).html(icoFavorite).attr('title', 'Избранное');
     })
 }
 
