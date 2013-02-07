@@ -73,7 +73,9 @@ if (config.showFavoriteAsIco) {
             '.comment-info .favourite .icon-synio-favourite { width:11px; height:11px; background-position:0px -37px }' +
             '.comment-info .favourite.active .icon-synio-favourite { background-position:0px -65px }' +
             '.topic-info .favourite .icon-synio-favourite { width:11px; height:11px; background-position:0px -37px }' +
-            '.topic-info .favourite.active .icon-synio-favourite { background-position:0px -65px }'
+            '.topic-info .favourite.active .icon-synio-favourite { background-position:0px -65px }' +
+            '.table-talk .favourite .icon-synio-favourite { width:17px; height:17px; width:17px;height:17px; background-position:0px -77px }' +
+            '.table-talk .favourite.active .icon-synio-favourite { background-position:-17px -77px }'
         ).appendTo(document.head);
 
         function process(elements) {
@@ -83,10 +85,11 @@ if (config.showFavoriteAsIco) {
                 .addClass(clsProcessed);
         }
 
-        // Комменты/посты, уже открытые на странице
+        // Комменты/посты/письма, уже открытые на странице
         $(function() {
             process('.comment-info .favourite');
             process('.topic-info .favourite');
+            process('.table-talk .favourite');
         });
 
         // Комменты, подгруженные динамически
