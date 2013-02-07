@@ -23,18 +23,33 @@
 // И наоборот, чтобы включить, заменить на true (кроме changeDateFormat, тут надо вводить формат даты)
 //
 var config = {
-    hideHideButton: true, /* Показывать кнопку "Скрыть" только при наведении */
-    showFavoriteAsIco: true, /* Заменить "В избранное" на звёздочку */
-    changeDateFormat: false, /* Если надо, впишите сюда строку форматирования, например, 'dd.MM.yyyy HH:mm' */
-    localTime: false, /* Показывать локальное время вместо московского */
-    relativeTime: false, /* Для тех, кто соскучился по времени в духе "только что" и "5 минут назад" */
-    fixCommentDuplication: true, /* Включить костыль для редкого бага с дублированием динамически подгруженных комментов */
-    addHistoryTimeline: true, /* Добавить скроллер по истории появления комментариев */
+    narrowTree: 0,                         /* Целое число  Сузить дерево комментов до этого значения. false или 0, чтобы не сужать*/
+    hideHideButton: true,                  /* true/false   Показывать кнопку "Скрыть" только при наведении */
+    showFavoriteAsIco: true,               /* true/false   Заменить "В избранное" на звёздочку */
+    changeDateFormat: false,               /* Строка       Если надо, впишите сюда формат, например, 'dd.MM.yyyy HH:mm', если нет - false */
+    localTime: false,                      /* true/false   Показывать локальное время вместо московского */
+    relativeTime: false,                   /* true/false   Для тех, кто соскучился по времени в духе "только что" и "5 минут назад" */
+    fixCommentDuplication: true,           /* true/false   Включить костыль для редкого бага с дублированием динамически подгруженных комментов */
+    addHistoryTimeline: true,              /* true/false   Добавить скроллер по истории появления комментариев */
 }
 
+//
+// 1. Сужение дерева комментариев стилевым хаком
+//
+if (config.narrowTree) {
+    (function() {
+        var style = '.comment-wrapper';
+        for (var i = 1; i < config.narrowTree; i++) {
+            style += ' .comment-wrapper';
+        }
+        $('<STYLE>').text(
+            style + ' { padding-left: 0 !important } '
+        ).appendTo(document.head);
+    })();
+}
 
 //
-// 1. скрытие кнопки "Скрыть"
+// 2. скрытие кнопки "Скрыть"
 //
 if (config.hideHideButton) {
     (function() {
@@ -47,7 +62,7 @@ if (config.hideHideButton) {
 }
 
 //
-// 2. отображение "В избранное" в виде пиктограммы
+// 3. отображение "В избранное" в виде пиктограммы
 //
 if (config.showFavoriteAsIco) {
     (function() {
@@ -88,7 +103,7 @@ if (config.showFavoriteAsIco) {
 }
 
 //
-// 3. форматирование дат
+// 4. форматирование дат
 //
 
 // Если мы в том же часовом поясе, что и Москва, то нам можно не заморачиваться с поясами
@@ -197,7 +212,7 @@ if (config.changeDateFormat || config.localTime || config.relativeTime) {
 }
 
 //
-// 4. Фикс дублирования комментов
+// 5. Фикс дублирования комментов
 //
 if (config.fixCommentDuplication) {
     (function() {
@@ -237,7 +252,7 @@ if (config.fixCommentDuplication) {
 }
 
 //
-// 5. Добавляем таймлайн
+// 6. Добавляем таймлайн
 //
 if ($('#comments').length && config.addHistoryTimeline) {
     (function() {
