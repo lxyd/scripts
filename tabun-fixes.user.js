@@ -34,7 +34,7 @@ var config = {
 }
 
 //
-// 1. Сужение дерева комментариев стилевым хаком
+// 1. сужение дерева комментариев стилевым хаком
 //
 if (config.narrowTree) {
     (function() {
@@ -54,9 +54,8 @@ if (config.narrowTree) {
 if (config.hideHideButton) {
     (function() {
         $('<STYLE>').text(
-            '.comment .comment-info .comment-hide { display:none }                ' +
-            '.comment:hover .comment-info .comment-hide { display:block }         ' +
-            '.comment.{{clsCommentHidden}} .{{clsBtnCommentHide}} { display:none }'
+            '.comment .comment-info .comment-hide { display:none } ' +
+            '.comment:hover .comment-info .comment-hide { display:block } '
         ).appendTo(document.head);
     })();
 }
