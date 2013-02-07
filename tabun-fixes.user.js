@@ -107,12 +107,6 @@ if (config.showFavoriteAsIco) {
 //
 // 4. форматирование дат
 //
-
-// Если мы в том же часовом поясе, что и Москва, то нам можно не заморачиваться с поясами
-if (new Date().getTimezoneOffset() == -240) {
-    config.localTime = false;
-}
-
 if (config.changeDateFormat || config.localTime || config.relativeTime) {
     (function() {
         /**
@@ -198,6 +192,8 @@ if (config.changeDateFormat || config.localTime || config.relativeTime) {
         $(function() {
             process('.comment .comment-date TIME');
             process('.topic .topic-info-date TIME');
+            // TODO: список сообщений в личке (он не содержит атрибута datetime)
+            process('#sidebar .block-type-stream TIME');
         });
 
         // Комменты, подгруженные динамически
