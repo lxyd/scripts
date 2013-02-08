@@ -387,7 +387,8 @@ if (config.moveTopicAuthorToBottom) {
 
         $('<STYLE>').text(
             '.topic-footer .topic-info li.' + clsBottomAvatar + ' { padding: 6px 11px 6px 0px } ' +
-            '.topic-footer .topic-info li { padding: 12px 11px 6px 0px }'
+            '.topic-footer .topic-info li { padding: 12px 11px 6px 0px }' +
+            '.topic-header .topic-blog { font-size: 14px }'
         ).appendTo(document.head);
 
         function process(elements) {
