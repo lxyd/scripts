@@ -372,7 +372,7 @@ if (config.scrollCommentsByNumber) {
             );
         }
 
-        ls.hook.add('ls_comments_init_after', sortNewComments);
+        $(sortNewComments);
         ls.hook.add('ls_comments_load_after', sortNewComments);
     })();
 }
