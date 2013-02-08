@@ -23,13 +23,15 @@
 // И наоборот, чтобы включить, заменить на true (кроме changeDateFormat, тут надо вводить формат даты)
 //
 var config = {
-    narrowTree: 0,                         /* Целое число  Сузить дерево комментов до этого значения. false или 0, чтобы не сужать*/
-    hideHideButton: true,                  /* true/false   Показывать кнопку "Скрыть" только при наведении */
-    showFavoriteAsIco: true,               /* true/false   Заменить "В избранное" на звёздочку */
-    changeDateFormat: false,               /* Строка       Если надо, впишите сюда формат, например, 'dd.MM.yyyy HH:mm', если нет - false */
-    localTime: false,                      /* true/false   Показывать локальное время вместо московского */
-    relativeTime: false,                   /* true/false   Для тех, кто соскучился по времени в духе "только что" и "5 минут назад" */
-    addHistoryTimeline: true,              /* true/false   Добавить скроллер по истории появления комментариев */
+    narrowTree: 0,                    // 1    Целое число  Сузить дерево комментов до этого значения. false или 0, чтобы не сужать
+    hideHideButton: true,             // 2    true/false   Показывать кнопку "Скрыть" только при наведении
+    showFavoriteAsIco: true,          // 3    true/false   Заменить "В избранное" на звёздочку
+    changeDateFormat: false,          // 4.a  Строка       Если надо, впишите сюда формат, например, 'dd.MM.yyyy HH:mm', если нет - false
+    localTime: false,                 // 4.b  true/false   Показывать локальное время вместо московского
+    relativeTime: false,              // 4.c  true/false   Для тех, кто соскучился по времени в духе "только что" и "5 минут назад"
+    addHistoryTimeline: true,         // 5    true/false   Добавить скроллер по истории появления комментариев
+    scrollCommentsByNumber: false,    // 6    true/false   Скроллить комментарии не сверху вниз, а по порядку добавления
+    moveTopicAuthorToBottom: false,   // 7    true/false   В топиках переместить автора вниз
 }
 
 //
@@ -65,7 +67,7 @@ if (config.hideHideButton) {
 if (config.showFavoriteAsIco) {
     (function() {
 
-        var clsProcessed = 'tabun-fixes-processed';
+        var clsProcessed = 'tabun-fixes-favorites-processed';
 
         $('<STYLE>').text(
             '.comment-info .favourite .icon-synio-favourite { width:11px; height:11px; background-position:0px -37px }' +
@@ -169,7 +171,7 @@ if (config.changeDateFormat || config.localTime || config.relativeTime) {
         })();
 
         var defaultDateFormat = 'd MMMM yyyy, HH:mm'
-          , clsProcessed = 'tabun-fixes-processed';
+          , clsProcessed = 'tabun-fixes-time-processed';
 
         function process(elements) {
             $(elements).each(function() {
@@ -356,6 +358,64 @@ if ($('#comments').length && config.addHistoryTimeline) {
             updateSliderPosition();
 
         });
+    })();
+}
+
+//
+// 6. Возвращает поведение скролла по новым комментам
+//
+if (config.scrollCommentsByNumber) {
+    (function() {
+        function sortNewComments() {
+            ls.comments.aCommentNew.sort(
+                function(a, b) { return parseInt(a) - parseInt(b) }
+            );
+        }
+
+        ls.hook.add('ls_comments_init_after', sortNewComments);
+        ls.hook.add('ls_comments_load_after', sortNewComments);
+    })();
+}
+
+//
+// 7. Перенос имени автора топика вниз
+//
+if (config.moveTopicAuthorToBottom) {
+    (function() {
+
+        var clsBottomAvatar = 'tabun-fixes-bottom-avatar';
+
+        $('<STYLE>').text(
+            '.topic-footer .topic-info li.' + clsBottomAvatar + ' { padding: 6px 11px 6px 0px } ' +
+            '.topic-footer .topic-info li { padding: 12px 11px 6px 0px }'
+        ).appendTo(document.head);
+
+        function process(elements) {
+            $(elements).each(function() {
+                var elTopic = $(this)
+                  , elName = $('.topic-header .topic-info A[rel=author]', elTopic)
+                  , elBottomInfo = $('.topic-footer .topic-info', elTopic);
+
+                if (elName.length) {
+                    elName[0].nextSibling.textContent = "";
+                    var elAvatar = elName.prev('A');
+
+                    $('<LI>').append(elName).prependTo(elBottomInfo);
+                    $('<LI>').append(elAvatar).prependTo(elBottomInfo).addClass(clsBottomAvatar);
+                }
+            });
+        }
+
+        // Посты, уже открытые на странице
+        $(function() {
+            process('.topic');
+        });
+
+        // Посты, подгруженные с помощью кнопки "получить ещё посты"
+        ls.hook.add('ls_userfeed_get_more_after', function() {
+            process($('.topic').not('.' + clsProcessed));
+        });
+
     })();
 }
 
