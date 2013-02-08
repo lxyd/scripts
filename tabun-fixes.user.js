@@ -407,9 +407,15 @@ if ($('#comments').length && config.addHistoryTimeline) {
 if (config.fixLoadedCommentsOrder) {
     (function() {
         ls.hook.add('ls_comments_load_after', function() {
-            ls.comments.aCommentNew = Array.prototype.slice.apply(
+            var tmp = Array.prototype.slice.apply(
                 document.getElementsByClassName(ls.comments.options.classes.comment_new)
-            ).map(function(e) { return e.getAttribute('id').replace('comment_id_', '') });
+            ).map(
+                function(e) { return e.getAttribute('id').replace('comment_id_', '') }
+            ).filter(
+                function(e) { return ls.comments.aCommentNew.indexOf(e) != -1 }
+            );
+
+            ls.comments.aCommentNew = tmp;
             ls.comments.setCountNewComment(ls.comments.aCommentNew.length);
         }, 1 /* priority which is not so high */);
     })();
