@@ -152,18 +152,18 @@ if (config.changeDateFormat || config.localTime || config.relativeTime) {
                     switch(pattern) {
                         case 'yyyy': return arr[1];
                         case 'yy'  : return arr[1].substring(2);
-                        case 'MMMM': return aMonthsLong[parseInt(arr[2])-1];
-                        case 'MMM' : return aMonthsShort[parseInt(arr[2])-1];
+                        case 'MMMM': return aMonthsLong[parseInt(arr[2], 10)-1];
+                        case 'MMM' : return aMonthsShort[parseInt(arr[2], 10)-1];
                         case 'MM'  : return arr[2];
-                        case 'M'   : return parseInt(arr[2]);
+                        case 'M'   : return parseInt(arr[2], 10);
                         case 'dd'  : return arr[3];
-                        case 'd'   : return parseInt(arr[3]);
+                        case 'd'   : return parseInt(arr[3], 10);
                         case 'HH'  : return arr[4];
-                        case 'H'   : return parseInt(arr[4]);
+                        case 'H'   : return parseInt(arr[4], 10);
                         case 'mm'  : return arr[5];
-                        case 'm'   : return parseInt(arr[5]);
+                        case 'm'   : return parseInt(arr[5], 10);
                         case 'ss'  : return arr[6];
-                        case 's'   : return parseInt(arr[6]);
+                        case 's'   : return parseInt(arr[6], 10);
                     }
                 });
             }
@@ -234,7 +234,7 @@ if (config.fixCommentDuplication) {
         // Уберём удалённые дубликаты из количества новых
         ls.hook.add('ls_comments_load_after', function() {
             ls.comments.aCommentNew = ls.comments.aCommentNew.filter(function(id) {
-                return removed.indexOf(parseInt(id)) == -1;
+                return removed.indexOf(parseInt(id, 10)) == -1;
             });
             ls.comments.setCountNewComment(ls.comments.aCommentNew.length);
             removed = [];
@@ -350,7 +350,7 @@ if ($('#comments').length && config.addHistoryTimeline) {
         // Комменты, подгруженные динамически
         ls.hook.add('ls_comment_inject_after', function() {
             var showAll = visibleCommentsCount == chronology.length;
-            var id = parseInt($('.comment', this).attr('id').replace('comment_id_', ''));
+            var id = parseInt($('.comment', this).attr('id').replace('comment_id_', ''), 10);
             chronology.push(id);
             if (showAll) {
                 visibleCommentsCount = chronology.length;
@@ -360,7 +360,7 @@ if ($('#comments').length && config.addHistoryTimeline) {
         $(function() {
 
             chronology = Array.prototype.map.call($('.comment'), function(c) {
-                return parseInt(c.getAttribute('id').replace('comment_id_', ''));
+                return parseInt(c.getAttribute('id').replace('comment_id_', ''), 10);
             });
 
             chronology.sort();
