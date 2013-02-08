@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name    Tabun fixes
 // @version    3
-// @description    Возможность выбрать формат дат, использовать локальное время вместо московского, замена кнопки "в избранное" на звёздочку, возможность сузить лесенку комментов, скрыть кнопку "скрыть" до наведения на коммент, добавление таймлайна комментов и костыльное исправление бага с дублирующимися комментами при обновлении.
+// @description    Возможность выбрать формат дат, использовать локальное время вместо московского, замена кнопки "в избранное" на звёздочку, возможность сузить лесенку комментов, скрыть кнопку "скрыть" до наведения на коммент, а также добавление таймлайна комментов.
 // @include    http://tabun.everypony.ru/*
 // @match    http://tabun.everypony.ru/*
 // @author   eeyup
@@ -29,9 +29,7 @@ var config = {
     changeDateFormat: false,               /* Строка       Если надо, впишите сюда формат, например, 'dd.MM.yyyy HH:mm', если нет - false */
     localTime: false,                      /* true/false   Показывать локальное время вместо московского */
     relativeTime: false,                   /* true/false   Для тех, кто соскучился по времени в духе "только что" и "5 минут назад" */
-    fixCommentDuplication: true,           /* true/false   Включить костыль для редкого бага с дублированием динамически подгруженных комментов */
     addHistoryTimeline: true,              /* true/false   Добавить скроллер по истории появления комментариев */
-    fixLoadedCommentsOrder: true,          /* true/false   При клике на цифру около обновлятора, прокручивать комменты не по порядку написания, а сверху вниз */
 }
 
 //
@@ -211,47 +209,7 @@ if (config.changeDateFormat || config.localTime || config.relativeTime) {
 }
 
 //
-// 5. Фикс дублирования комментов
-//
-if (config.fixCommentDuplication) {
-    (function() {
-
-        var commentsIds = {}
-          , removed = []
-
-        // Комменты, подгруженные динамически
-        ls.hook.add('ls_comment_inject_after', function() {
-            var id = this.attr('id').replace('comment_wrapper_id_', '')
-
-            if (commentsIds[id]) {
-                this.remove();
-                removed.push(id);
-            }
-
-            commentsIds[id] = true;
-
-        }, 0 /*highest priority*/);
-
-        // Уберём удалённые дубликаты из количества новых
-        ls.hook.add('ls_comments_load_after', function() {
-            ls.comments.aCommentNew = ls.comments.aCommentNew.filter(function(id) {
-                return removed.indexOf(parseInt(id, 10)) == -1;
-            });
-            ls.comments.setCountNewComment(ls.comments.aCommentNew.length);
-            removed = [];
-        }, 0 /*highest priority*/);
-
-        $(function() {
-            $('.comment').each(function() {
-                commentsIds[this.getAttribute('id').replace('comment_id_', '')] = true;
-            });
-        });
-
-    })();
-}
-
-//
-// 6. Добавляем таймлайн
+// 5. Добавляем таймлайн
 //
 if ($('#comments').length && config.addHistoryTimeline) {
     (function() {
@@ -398,26 +356,6 @@ if ($('#comments').length && config.addHistoryTimeline) {
             updateSliderPosition();
 
         });
-    })();
-}
-
-//
-// 7. Перебор свежезагруженных комментов не по номеру, а сверху вниз
-//
-if (config.fixLoadedCommentsOrder) {
-    (function() {
-        ls.hook.add('ls_comments_load_after', function() {
-            var tmp = Array.prototype.slice.apply(
-                document.getElementsByClassName(ls.comments.options.classes.comment_new)
-            ).map(
-                function(e) { return e.getAttribute('id').replace('comment_id_', '') }
-            ).filter(
-                function(e) { return ls.comments.aCommentNew.indexOf(e) != -1 }
-            );
-
-            ls.comments.aCommentNew = tmp;
-            ls.comments.setCountNewComment(ls.comments.aCommentNew.length);
-        }, 1 /* priority which is not so high */);
     })();
 }
 
