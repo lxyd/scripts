@@ -31,10 +31,11 @@ var config = {
     relativeTime: false,                   /* true/false   Для тех, кто соскучился по времени в духе "только что" и "5 минут назад" */
     fixCommentDuplication: true,           /* true/false   Включить костыль для редкого бага с дублированием динамически подгруженных комментов */
     addHistoryTimeline: true,              /* true/false   Добавить скроллер по истории появления комментариев */
+    fixLoadedCommentsOrder: true,          /* true/false   При клике на цифру около обновлятора, прокручивать комменты не по порядку написания, а сверху вниз */
 }
 
 //
-// 1. сужение дерева комментариев стилевым хаком
+// 1. Сужение дерева комментариев стилевым хаком
 //
 if (config.narrowTree) {
     (function() {
@@ -49,7 +50,7 @@ if (config.narrowTree) {
 }
 
 //
-// 2. скрытие кнопки "Скрыть"
+// 2. Скрытие кнопки "Скрыть"
 //
 if (config.hideHideButton) {
     (function() {
@@ -61,7 +62,7 @@ if (config.hideHideButton) {
 }
 
 //
-// 3. отображение "В избранное" в виде пиктограммы
+// 3. Отображение "В избранное" в виде пиктограммы
 //
 if (config.showFavoriteAsIco) {
     (function() {
@@ -105,7 +106,7 @@ if (config.showFavoriteAsIco) {
 }
 
 //
-// 4. форматирование дат
+// 4. Форматирование дат
 //
 if (config.changeDateFormat || config.localTime || config.relativeTime) {
     (function() {
@@ -238,7 +239,7 @@ if (config.fixCommentDuplication) {
             });
             ls.comments.setCountNewComment(ls.comments.aCommentNew.length);
             removed = [];
-        });
+        }, 0 /*highest priority*/);
 
         $(function() {
             $('.comment').each(function() {
@@ -397,6 +398,20 @@ if ($('#comments').length && config.addHistoryTimeline) {
             updateSliderPosition();
 
         });
+    })();
+}
+
+//
+// 7. Перебор свежезагруженных комментов не по номеру, а сверху вниз
+//
+if (config.fixLoadedCommentsOrder) {
+    (function() {
+        ls.hook.add('ls_comments_load_after', function() {
+            ls.comments.aCommentNew = Array.prototype.slice.apply(
+                document.getElementsByClassName(ls.comments.options.classes.comment_new)
+            ).map(function(e) { return e.getAttribute('id').replace('comment_id_', '') });
+            ls.comments.setCountNewComment(ls.comments.aCommentNew.length);
+        }, 1 /* priority which is not so high */);
     })();
 }
 
