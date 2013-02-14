@@ -17,7 +17,8 @@
 
     $(function() {
 
-        var period = 30 * 1000
+        var enabledByDefault = true
+          , period = 30 * 1000
           , updateComments = function() {
                 ls.comments.load(topicId, type, undefined, true);
             }
@@ -31,7 +32,6 @@
             var idInterval = null
               , elCheck = $('<INPUT>', {
                     type: 'checkbox',
-                    checked: 'checked',
                     title: 'Обновлять автоматически'
                 }).appendTo(
                     $('<DIV>').css({
@@ -53,7 +53,10 @@
                     }
                 });
 
-            idInterval = window.setInterval(updateComments, period);
+            if (enabledByDefault) {
+                elCheck.attr('checked', 'checked');
+                idInterval = window.setInterval(updateComments, period);
+            }
         }
 
     });
