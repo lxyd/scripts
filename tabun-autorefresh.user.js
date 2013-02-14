@@ -17,20 +17,43 @@
 
     $(function() {
 
-        var arr = /(?:^|\s)ls\.comments\.load\(([0-9]+),\s*'(topic|talk)'\)/.exec($('#update-comments').attr('onclick'));
-
-
-        if (arr != null) {
-            var topicId = arr[1]
-              , type = arr[2];
-
-            if (topicId != null && type != null) {
-                setInterval(function(){
-
-                    ls.comments.load(topicId, type, undefined, true);
-
-                }, 30 * 1000);
+        var period = 30 * 1000
+          , updateComments = function() {
+                ls.comments.load(topicId, type, undefined, true);
             }
+          , arr = /(?:^|\s)ls\.comments\.load\(([0-9]+),\s*'(topic|talk)'\)/.exec($('#update-comments').attr('onclick')) || []
+          , topicId = arr[1]
+          , type = arr[2]
+
+
+        if (topicId != null && type != null) {
+
+            var idInterval = null
+              , elCheck = $('<INPUT>', {
+                    type: 'checkbox',
+                    checked: 'checked',
+                    title: 'Обновлять автоматически'
+                }).appendTo(
+                    $('<DIV>').css({
+                        paddingTop: 2,
+                        width: 25,
+                        textAlign: 'center'
+                    }).appendTo('#update')
+                ).on('change', function() {
+                    if (elCheck.is(':checked')) {
+                        if (idInterval != null) {
+                            clearInterval(idInterval);
+                        }
+                        idInterval = window.setInterval(updateComments, period);
+                    } else {
+                        if (idInterval != null) {
+                            clearInterval(idInterval);
+                        }
+                        idInterval = null;
+                    }
+                });
+
+            idInterval = window.setInterval(updateComments, period);
         }
 
     });
