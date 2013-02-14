@@ -38,7 +38,7 @@
                         paddingTop: 2,
                         width: 25,
                         textAlign: 'center'
-                    }).appendTo('#update')
+                    }).insertAfter('#update-comments')
                 ).on('change', function() {
                     if (elCheck.is(':checked')) {
                         if (idInterval != null) {
