@@ -32,6 +32,8 @@ var config = {
     addHistoryTimeline: true,         // 5    true/false   Добавить скроллер по истории появления комментариев
     scrollCommentsByNumber: false,    // 6    true/false   Скроллить комментарии не сверху вниз, а по порядку добавления
     moveTopicAuthorToBottom: false,   // 7    true/false   В топиках переместить автора вниз
+    unstyleVisitedNewCommentsAfterUpdate: true,  // 8.a    true/false   Убирать зелёную подсветку с комментов после автообновления при отправке коммента
+    unstyleVisitedNewComments: false,  // 8.b    true/false   Убирать зелёную подсветку с комментов сразу после прочтения
 }
 
 //
@@ -417,6 +419,40 @@ if (config.moveTopicAuthorToBottom) {
             process($('.topic').not('.' + clsProcessed));
         });
 
+    })();
+}
+
+//
+// 8. Убираем зелень с комментов
+//
+if (config.unstyleVisitedNewComments) {
+    (function() {
+        ls.comments.goToNextComment = function (){
+            if (this.aCommentNew[0]){
+                var elComment = $('#comment_id_'+this.aCommentNew[0]);
+                if (elComment.length){
+                    this.scrollToComment(this.aCommentNew[0]);
+                    elComment.removeClass('comment-new');
+                }
+                this.aCommentNew.shift();
+            }
+            this.setCountNewComment(this.aCommentNew.length);
+        }
+    })();
+} else if (config.unstyleVisitedNewCommentsAfterUpdate) {
+    (function() {
+        ls.hook.add('ls_comments_load_after', function() {
+            $('.comment-new').each(function() {
+                var elComment = $(this)
+                  , id = elComment.attr('id').replace('comment_id_', '');
+
+                if (ls.comments.aCommentNew.indexOf(id) == -1 &&
+                    ls.comments.aCommentNew.indexOf(parseInt(id)) == -1) {
+
+                        elComment.removeClass('comment-new');
+                }
+            });
+        });
     })();
 }
 
