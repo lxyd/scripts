@@ -228,7 +228,7 @@ if ($('#comments').length && config.addHistoryTimeline) {
           , idChronologySlider = 'tabun-fixes-chronology-slider';
 
         $('<STYLE>').text(
-            '#' + idChronologyTimeline + ' { display:inline-block; position:relative; overflow:visible; height:5px; width:100px; margin:3px 10px; border-radius:2px; background:#CCCCCF } ' +
+            '#' + idChronologyTimeline + ' { display:inline-block; position:relative; overflow:visible; height:5px; width:145px; margin:3px 10px; border-radius:2px; background:#CCCCCF } ' +
             '#' + idChronologySlider + ' { position:absolute; top:-3px; left:0; height:11px; width:10px; border-radius:2px; background:#889; cursor:pointer } ' +
             '#' + idChronologyPlus + ' { margin-right:5px } ' +
             '#' + idChronologyMinus + ' { margin-left:5px } '
