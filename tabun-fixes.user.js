@@ -34,6 +34,7 @@ var config = {
     moveTopicAuthorToBottom: false,   // 7    true/false   В топиках переместить автора вниз
     unstyleVisitedNewCommentsAfterUpdate: true,  // 8.a    true/false   Убирать зелёную подсветку с комментов после автообновления при отправке коммента
     unstyleVisitedNewComments: false,  // 8.b    true/false   Убирать зелёную подсветку с комментов сразу после прочтения
+    fixSameTopicCommentLinks: true,   // 9    true/false   При клике на ссылки вида http://tabun.everypony.ru/comments/<id> скроллить на коммент "#<id>", если он находится в этом же топике
 }
 
 //
@@ -416,7 +417,7 @@ if (config.moveTopicAuthorToBottom) {
 
         // Посты, подгруженные с помощью кнопки "получить ещё посты"
         ls.hook.add('ls_userfeed_get_more_after', function() {
-            process($('.topic').not('.' + clsProcessed));
+            process($('.topic').not('.' + clsBottomAvatar));
         });
 
     })();
@@ -453,6 +454,55 @@ if (config.unstyleVisitedNewComments) {
                 }
             });
         });
+    })();
+}
+
+//
+// 9. Ссылки на комменты в этом же топике
+//
+if (config.fixSameTopicCommentLinks) {
+    (function() {
+
+        var selector = 'A[href^="http://tabun.everypony.ru/comments/"]'
+          , clsSameTopicLink = 'tabun-fixes-same-topic-link';
+
+        $('<STYLE>').text(
+            'A.' + clsSameTopicLink + ', ' +
+            'A.' + clsSameTopicLink + ':hover, ' +
+            'A.' + clsSameTopicLink + ':visited { color: #0A0 } '
+        ).appendTo(document.head);
+
+        // href MUST start with http://tabun.everypony.ru/comments/
+        function sameTopicCommentId(href) {
+            var commentId = parseInt(/\/([0-9]+)$/.exec(href)[1], 10);
+            if ($('#comment_id_' + commentId).length) {
+                return commentId;
+            } else {
+                return null;
+            }
+        }
+
+        $(document).on('click', selector, function(ev) {
+
+            var scrollableId = sameTopicCommentId(this.getAttribute('href'));
+            if (scrollableId) {
+                ls.comments.scrollToComment(scrollableId);
+                ev.stopImmediatePropagation();
+                return false;
+            }
+
+        }).on('mouseenter', selector, function(ev) {
+            
+            if (sameTopicCommentId(this.getAttribute('href'))) {
+                $(this).addClass(clsSameTopicLink);
+            }
+            
+        }).on('mouseleave', selector, function(ev) {
+
+            $(this).removeClass(clsSameTopicLink);
+            
+        });
+
     })();
 }
 
