@@ -463,7 +463,12 @@ if (config.unstyleVisitedNewComments) {
 if (config.fixSameTopicCommentLinks) {
     (function() {
 
-        var selector = 'A[href^="http://tabun.everypony.ru/comments/"]'
+        var prefixes = [
+                'http://tabun.everypony.ru/comments/',
+                'http://tabun.everypony.ru' + window.location.pathname + '#comment',
+                '#comment'
+            ]
+          , selector = prefixes.map(function(p){return'A[href^="'+p+'"]'}).join(', ')
           , clsSameTopicLink = 'tabun-fixes-same-topic-link';
 
         $('<STYLE>').text(
@@ -472,20 +477,25 @@ if (config.fixSameTopicCommentLinks) {
             'A.' + clsSameTopicLink + ':visited { color: #0A0 } '
         ).appendTo(document.head);
 
-        // href MUST start with http://tabun.everypony.ru/comments/
         function sameTopicCommentId(href) {
-            var commentId = parseInt(/\/([0-9]+)$/.exec(href)[1], 10);
-            if ($('#comment_id_' + commentId).length) {
-                return commentId;
-            } else {
-                return null;
-            }
+            var res = null;
+            prefixes.forEach(function(p) {
+                var commentId;
+                if (href.substr(0, p.length) == p) {
+                    commentId = href.substr(p.length);
+                    if ($('#comment_id_' + commentId).length) {
+                        res = commentId;
+                    }
+                }
+            });
+            return res;
         }
 
         $(document).on('click', selector, function(ev) {
 
             var scrollableId = sameTopicCommentId(this.getAttribute('href'));
             if (scrollableId) {
+                window.location.hash = "comment" + scrollableId;
                 ls.comments.scrollToComment(scrollableId);
                 ev.stopImmediatePropagation();
                 return false;
