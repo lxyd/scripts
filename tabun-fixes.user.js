@@ -93,7 +93,7 @@ if (config.guiConfig) {
             }
           , { // 4 Переформатирование дат
                 build: function(container, cfg) {
-                    this.txtFormat = $('<INPUT>', { type: 'text' }).val(cfg.changeDateFormat).prop('disabled', !cfg.changeDateFormat);
+                    this.txtFormat = $('<INPUT>', { type: 'text' }).val(cfg.changeDateFormat || "").prop('disabled', !cfg.changeDateFormat);
                     this.chkReformat = $('<INPUT>', { type: 'checkbox' }).on('change', function() {
                         this.txtFormat.prop('disabled', !this.chkReformat.prop('checked'));
                     }.bind(this)).prop('checked', !!cfg.changeDateFormat);
