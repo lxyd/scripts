@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name    Tabun fixes
 // @version    5
-// @description    Возможность выбрать формат дат, использовать локальное время вместо московского, замена кнопки "в избранное" на звёздочку, возможность сузить лесенку комментов, скрыть кнопку "скрыть" до наведения на коммент, а также добавление таймлайна комментов.
+// @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 // @include    http://tabun.everypony.ru/*
 // @match    http://tabun.everypony.ru/*
 // @author   eeyup
@@ -778,13 +778,10 @@ if (config.autoLoadInterval) {
                     title: 'Обновлять автоматически'
                 }).on('change', function() {
                     enabled = elCheck.prop('checked');
-                    if (!enabled) {
-                        reloadWhenNotFocused = false;
-                    }
                     handleStateChange();
                 }).on('mousedown', function() {
                     var longPressTimer = window.setTimeout(function() {
-                        reloadWhenNotFocused = true;
+                        reloadWhenNotFocused = !reloadWhenNotFocused;
                         handleStateChange();
                     }, 1300);
                     $(document).on('mouseup', function mouseUp() {
