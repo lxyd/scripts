@@ -10,10 +10,10 @@
 (function(document, fn) {
     var script = document.createElement('script');
     script.setAttribute("type", "text/javascript");
-    script.textContent = '(' + fn + ')(window, window.document)';
+    script.textContent = '(' + fn + ')(window, window.document, jQuery)';
     document.body.appendChild(script); // run the script
     document.body.removeChild(script); // clean up
-})(document, function(window, document) {
+})(document, function(window, document, $) {
 
 
 //
