@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    4
+// @version    5
 // @description    Возможность выбрать формат дат, использовать локальное время вместо московского, замена кнопки "в избранное" на звёздочку, возможность сузить лесенку комментов, скрыть кнопку "скрыть" до наведения на коммент, а также добавление таймлайна комментов.
 // @include    http://tabun.everypony.ru/*
 // @match    http://tabun.everypony.ru/*
@@ -22,7 +22,8 @@
 // Чтобы выключить функцию, замените значение соответствующей строке на false
 // И наоборот, чтобы включить, заменить на true (кроме changeDateFormat, тут надо вводить формат даты)
 //
-var config = {
+var defaultConfig = {
+    guiConfig: true,                  // 0    true/false   Графический конфигуратор
     narrowTree: 0,                    // 1    Целое число  Сузить дерево комментов до этого значения. false или 0, чтобы не сужать
     hideHideButton: true,             // 2    true/false   Показывать кнопку "Скрыть" только при наведении
     showFavoriteAsIco: true,          // 3    true/false   Заменить "В избранное" на звёздочку
@@ -32,9 +33,217 @@ var config = {
     addHistoryTimeline: true,         // 5    true/false   Добавить скроллер по истории появления комментариев
     scrollCommentsByNumber: false,    // 6    true/false   Скроллить комментарии не сверху вниз, а по порядку добавления
     moveTopicAuthorToBottom: false,   // 7    true/false   В топиках переместить автора вниз
-    unstyleVisitedNewCommentsAfterUpdate: true,  // 8.a    true/false   Убирать зелёную подсветку с комментов после автообновления при отправке коммента
+    unstyleVisitedNewCommentsAfterUpdate: true,  // 8    true/false   Убирать зелёную подсветку с комментов после автообновления при отправке коммента (нет аналога в гуёвом конфиге)
     unstyleVisitedNewComments: false,  // 8.b    true/false   Убирать зелёную подсветку с комментов сразу после прочтения
     fixSameTopicCommentLinks: true,   // 9    true/false   При клике на ссылки вида http://tabun.everypony.ru/comments/<id> скроллить на коммент "#<id>", если он находится в этом же топике
+    autoLoadInterval: 30,             // 10.a Целое число  Если не false и не 0, добавляет галочку для автоподгрузки добавленных комментов (минимальный интервал - 30)
+    autoLoadCheckedByDefault: false   // 10.b true/false   Стоит ли эта галочка по умолчанию
+}, config = defaultConfig;
+
+//
+// 0. Графический конфигуратор
+//
+if (config.guiConfig) {
+    (function() {
+        var lsKey = "tabun-fixes-config"
+          , subConfigs = []
+          , cfgUi;
+
+        function loadConfig() {
+            try {
+                config = $.extend({}, defaultConfig, JSON.parse(window.localStorage.getItem(lsKey) || "{}"));
+            } catch (err) {
+                alert("Ошибка загрузки конфига скрипта TabunFixes: настройки будут сброшены на умолчальные");
+                window.localStorage.removeItem(lsKey);
+                return;
+            }
+        }
+        
+        loadConfig();
+
+        subConfigs.push(
+            { // 9. При клике на ссылки вида http://tabun.everypony.ru/comments/<id> скроллить на коммент "#<id>", если он находится в этом же топике
+                build: function(container, cfg) {
+                    this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.fixSameTopicCommentLinks);
+                    $('<LABEL>').append(this.chk, "При клике на ссылку на коммент, скроллить на него, если он находится в этом же топике (такие ссылки будут зеленеть при наведении)").appendTo(container);
+                },
+                getCfg: function() { return { fixSameTopicCommentLinks: this.chk.prop('checked') }; }
+            }
+          , { // 10. Автоподгрузка комментов
+                build: function(container, cfg) {
+                    this.txtInterval = $('<INPUT>', { type: 'text' }).css('width', 30).val(cfg.autoLoadInterval).prop('disabled', !cfg.autoLoadInterval);
+                    this.chkByDefault = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.autoLoadCheckedByDefault);
+                    this.chkEnable = $('<INPUT>', { type: 'checkbox' }).on('change', function() {
+                        this.txtInterval.prop('disabled', !this.chkEnable.prop('checked'));
+                        this.chkByDefault.prop('disabled', !this.chkEnable.prop('checked'));
+                    }.bind(this)).prop('checked', !!cfg.autoLoadInterval);
+                    container.append(
+                        $('<LABEL>').append(this.chkEnable, "Добавить галочку для автоподгрузки комментов раз в "),
+                        this.txtInterval,
+                        " секунд (не меньше 30) ",
+                        $('<LABEL>').append(this.chkByDefault, "Включать её по умолчанию")
+                    );
+                },
+                getCfg: function() {
+                    return {
+                        autoLoadInterval: this.chkEnable.prop('checked') ? parseInt(this.txtInterval.val(), 10) : 0,
+                        autoLoadCheckedByDefault: this.chkByDefault.prop('checked')
+                    }
+                }
+            }
+          , { // 4 Переформатирование дат
+                build: function(container, cfg) {
+                    this.txtFormat = $('<INPUT>', { type: 'text' }).val(cfg.changeDateFormat).prop('disabled', !cfg.changeDateFormat);
+                    this.chkReformat = $('<INPUT>', { type: 'checkbox' }).on('change', function() {
+                        this.txtFormat.prop('disabled', !this.chkReformat.prop('checked'));
+                    }.bind(this)).prop('checked', !!cfg.changeDateFormat);
+                    this.chkLocal = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.localTime);
+                    this.chkRelative = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.relativeTime);
+                    container.append(
+                        $('<LABEL>').append(this.chkReformat, "Сменить формат дат "),
+                        this.txtFormat,
+                        "<BR/><P style=\"padding-left: 20px\">Формат дат: строка вроде \"d MMMM yyyy, HH:mm\", где:<BR/>" +
+                        "yyyy, yy - год (2013 или 13)<BR/>" +
+                        "MMMM, MMM, MM, M - месяц (февраля, фев, 02, 2)<BR/>" +
+                        "dd, d - день (09 или 9)<BR/>" +
+                        "HH, H - часы, mm, m - минуты, ss, s - секунды</P>",
+                        $('<LABEL>').append(this.chkLocal, "Отображать локальное время вместо московского"), "<BR/>",
+                        $('<LABEL>').append(this.chkRelative, "Отображать время в виде \"5 минут назад\"")
+                    );
+                },
+                getCfg: function() {
+                    return { 
+                        changeDateFormat: this.chkReformat.prop('checked') ? this.txtFormat.val() : false,
+                        localTime: this.chkLocal.prop('checked'),
+                        relativeTime: this.chkRelative.prop('checked')
+                    }
+                }
+            }
+          , { // 1. Cужение лесенки
+                build: function(container, cfg) {
+                    this.txtLen = $('<INPUT>', { type: 'text' }).css('width', 30).val(cfg.narrowTree).prop('disabled', !cfg.narrowTree);
+                    this.chkEnable = $('<INPUT>', { type: 'checkbox' }).on('change', function() {
+                        this.txtLen.prop('disabled', !this.chkEnable.prop('checked'));
+                    }.bind(this)).prop('checked', !!cfg.narrowTree);
+                    container.append(
+                        $('<LABEL>').append(this.chkEnable, "Уменьшить длину лесенки комментов до "),
+                        this.txtLen,
+                        " (целое число меньше " + ls.registry.get('comment_max_tree') + ")"
+                    );
+                },
+                getCfg: function() {
+                    return { narrowTree: this.chkEnable.prop('checked') ? parseInt(this.txtLen.val(), 10) : 0 }
+                }
+            }
+          , { // 3. Заменить "В избранное" на звёздочку
+                build: function(container, cfg) {
+                    this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.showFavoriteAsIco);
+                    $('<LABEL>').append(this.chk, "Заменить \"В избранное\" на звёздочку").appendTo(container);
+                },
+                getCfg: function() { return { showFavoriteAsIco: this.chk.prop('checked') }; }
+            }
+          , { // 2. Скрытие кнопки "скрыть"
+                build: function(container, cfg) {
+                    this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.hideHideButton);
+                    $('<LABEL>').append(this.chk, "Показывать кнопку \"Скрыть\" только при наведении на коммент").appendTo(container);
+                },
+                getCfg: function() { return { hideHideButton: this.chk.prop('checked') }; }
+            }
+          , { // 5. Добавить скроллер по истории появления комментариев
+                build: function(container, cfg) {
+                    this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.addHistoryTimeline);
+                    $('<LABEL>').append(this.chk, "Добавить скроллер по истории комментариев").appendTo(container);
+                },
+                getCfg: function() { return { addHistoryTimeline: this.chk.prop('checked') }; }
+            }
+          , { // 6. Перебирать комментарии не сверху вниз, а по порядку добавления
+                build: function(container, cfg) {
+                    this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.scrollCommentsByNumber);
+                    $('<LABEL>').append(this.chk, "Перебирать комментарии не сверху вниз, а по порядку добавления").appendTo(container);
+                },
+                getCfg: function() { return { scrollCommentsByNumber: this.chk.prop('checked') }; }
+            }
+          , { // 7. В топиках переместить автора вниз
+                build: function(container, cfg) {
+                    this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.moveTopicAuthorToBottom);
+                    $('<LABEL>').append(this.chk, "В информации о топике переместить автора вниз").appendTo(container);
+                },
+                getCfg: function() { return { moveTopicAuthorToBottom: this.chk.prop('checked') }; }
+            }
+          , { // 8. Убирать зелёную подсветку с комментов сразу после прочтения
+                build: function(container, cfg) {
+                    this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.unstyleVisitedNewComments);
+                    $('<LABEL>').append(this.chk, "Убирать подсветку с прочитанных новых комментов").appendTo(container);
+                },
+                getCfg: function() { return { unstyleVisitedNewComments: this.chk.prop('checked') }; }
+            }
+        );
+
+        $('#widemode').append($('<A>', {
+            href: 'javascript:void(0)',
+            title: 'Настройки user-script\'а TabunFixes'
+        }).css({
+            background: 'url("/templates/skin/synio/images/icons-synio.png") -272px -74px',
+            width: 16,
+            height: 24,
+            display: 'inline-block',
+            verticalAlign: 'bottom',
+            position: 'relative',
+            bottom: -3
+        }).on('click', function() {
+            if (cfgUi) {
+                cfgUi.remove();
+                cfgUi = null;
+                return false;
+            }
+            
+            cfgUi = $('<DIV>').css({
+                position: 'fixed',
+                right: 6,
+                bottom: 30,
+                width: 450,
+                zIndex: 10000,
+                background: 'White',
+                border: "1px solid Silver",
+                borderRadius: 6,
+                padding: 10
+            })
+            
+            $('<DIV>').text("Настройки userscript'а TabunFixes").css({
+                fontWeight: 'bold',
+                textAlign: 'center',
+                marginBottom: 15
+            }).appendTo(cfgUi);
+            // subconfigs
+            subConfigs.forEach(function(o) {
+                o.build($('<DIV>').css('marginBottom', 10).appendTo(cfgUi), config);
+            });
+            // Ok/Cancel
+            $('<DIV>').appendTo(cfgUi).append(
+                $('<A>', { href: 'javascript:void(0)' }).text("ОК (обновите страницу, чтобы сработало)").on('click', function() {
+                    try {
+                        var cfg = $.extend.apply(null, subConfigs.map(function(o) { return o.getCfg() }));
+                        window.localStorage.setItem(lsKey, JSON.stringify(cfg));
+                    } catch(err) {
+                        alert("Ошибка сохранения конфига: \"" + err.toString() + "\"");
+                        return false;
+                    }
+                    loadConfig();
+                    cfgUi.remove();
+                    cfgUi = null;
+                    return false;
+                })
+              , $('<A>', { href: 'javascript:void(0)' }).text("Отмена").on('click', function() {
+                    cfgUi.remove();
+                    cfgUi = null;
+                    return false;
+                }).css('float', 'right')
+            );
+            $('BODY').append(cfgUi);
+            return false;
+        }));
+
+    })();
 }
 
 //
@@ -229,10 +438,10 @@ if ($('#comments').length && config.addHistoryTimeline) {
           , idChronologySlider = 'tabun-fixes-chronology-slider';
 
         $('<STYLE>').text(
-            '#' + idChronologyTimeline + ' { display:inline-block; position:relative; overflow:visible; height:5px; width:145px; margin:3px 10px; border-radius:2px; background:#CCCCCF } ' +
+            '#' + idChronologyTimeline + ' { display:inline-block; position:relative; overflow:visible; height:5px; margin:3px 10px; border-radius:2px; background:#CCCCCF } ' +
             '#' + idChronologySlider + ' { position:absolute; top:-3px; left:0; height:11px; width:10px; border-radius:2px; background:#889; cursor:pointer } ' +
-            '#' + idChronologyPlus + ' { margin-right:5px } ' +
-            '#' + idChronologyMinus + ' { margin-left:5px } '
+            '#' + idChronologyPlus + ' { margin-right:5px; z-index:10 } ' +
+            '#' + idChronologyMinus + ' { margin-left:5px; z-index:10 } '
         ).appendTo(document.head);
 
         var startScrollTimeout = null;
@@ -337,7 +546,7 @@ if ($('#comments').length && config.addHistoryTimeline) {
                         scrollToLastVisibleComment();
                     })
                 ).append(
-                    $('<DIV>').attr('id', idChronologyTimeline).append(
+                    $('<DIV>').css('width', $('#widemode').width() - 70).attr('id', idChronologyTimeline).append(
                         $('<DIV>').attr('id', idChronologySlider).on('mousedown', function() {
                             $(document).on('mousemove', onMouseMove).on('mouseup', onMouseUp);
                             return false;
@@ -417,7 +626,7 @@ if (config.moveTopicAuthorToBottom) {
 
         // Посты, подгруженные с помощью кнопки "получить ещё посты"
         ls.hook.add('ls_userfeed_get_more_after', function() {
-            process($('.topic').not('.' + clsBottomAvatar));
+            process($('.topic').not('.' + clsProcessed));
         });
 
     })();
@@ -478,9 +687,8 @@ if (config.fixSameTopicCommentLinks) {
         ).appendTo(document.head);
 
         function sameTopicCommentId(href) {
-            var res = null;
+            var res = null, commentId;
             prefixes.forEach(function(p) {
-                var commentId;
                 if (href.substr(0, p.length) == p) {
                     commentId = href.substr(p.length);
                     if ($('#comment_id_' + commentId).length) {
@@ -495,7 +703,12 @@ if (config.fixSameTopicCommentLinks) {
 
             var scrollableId = sameTopicCommentId(this.getAttribute('href'));
             if (scrollableId) {
+                // update .hash part of the url avoiding immediate scrolling
+                var elCommentAnchor = $('#comment_id_' + scrollableId + ' A[name="comment' + scrollableId + '"]');
+                elCommentAnchor.attr('name', 'mungle-comment' + scrollableId);
                 window.location.hash = "comment" + scrollableId;
+                elCommentAnchor.attr('name', 'comment' + scrollableId);
+                // smooth scroll to the element
                 ls.comments.scrollToComment(scrollableId);
                 ev.stopImmediatePropagation();
                 return false;
@@ -514,6 +727,103 @@ if (config.fixSameTopicCommentLinks) {
         });
 
     })();
+}
+
+//
+// 10. Автоподгрузка комментов
+//
+if (config.autoLoadInterval) {
+    $(function() {
+        var period = Math.max(30, config.autoLoadInterval) * 1000
+          , arr = /(?:^|\s)ls\.comments\.load\(([0-9]+),\s*'(topic|talk)'\)/.exec($('#update-comments').attr('onclick')) || []
+          , topicId = arr[1]
+          , type = arr[2]
+
+        if (topicId != null && type != null) {
+
+            var eventsToCatchInitialFocus = 'keydown mousedown focus mousemove'
+              , focused = false
+              , reloadWhenNotFocused = false
+              , enabled = config.autoLoadCheckedByDefault
+              , needReloadingWhenFocused = false
+              , idInterval = null
+              , updateComments = function() {
+                    ls.comments.load(topicId, type, undefined, true);
+                }
+
+            $(window).on('focus', function(){
+                focused = true;
+                handleStateChange();
+            });
+            
+            $(window).on('blur', function(){
+                focused = false;
+                handleStateChange();
+            });
+            
+            $(document).on(eventsToCatchInitialFocus, function handler() {
+                focused = true;
+                $(document).off(eventsToCatchInitialFocus, handler);
+                handleStateChange();
+            });
+            
+            var divContainer = $('<DIV>').css({
+                    paddingTop: 2,
+                    width: 25,
+                    textAlign: 'center',
+                    borderRadius: 2
+                }).insertAfter('#update-comments')
+              , elCheck = $('<INPUT>', {
+                    type: 'checkbox',
+                    title: 'Обновлять автоматически'
+                }).on('change', function() {
+                    enabled = elCheck.prop('checked');
+                    if (!enabled) {
+                        reloadWhenNotFocused = false;
+                    }
+                    handleStateChange();
+                }).on('mousedown', function() {
+                    var longPressTimer = window.setTimeout(function() {
+                        reloadWhenNotFocused = true;
+                        handleStateChange();
+                    }, 1300);
+                    $(document).on('mouseup', function mouseUp() {
+                        window.clearTimeout(longPressTimer);
+                        $(document).off('mouseup', mouseUp);
+                    })
+                }).appendTo(divContainer).prop('checked', enabled);
+
+            function handleStateChange() {
+                divContainer.css({
+                    margin: reloadWhenNotFocused ? -1 : 0,
+                    border: reloadWhenNotFocused ? "1px solid #AA0" : "none"
+                });
+                elCheck.attr('title', 
+                    reloadWhenNotFocused ? "Обновляются даже когда вкладка не активна" : 
+                    enabled ?"Обновляются автоматически" : "Обновлять автоматически"
+                );
+                
+                if (!idInterval && enabled && (focused || reloadWhenNotFocused)) {
+                    if (needReloadingWhenFocused && focused) {
+                        updateComments();
+                        needReloadingWhenFocused = false;
+                    }
+                    idInterval = window.setInterval(timerFunc, period);
+                }
+            }
+            
+            function timerFunc() {
+                if (!enabled || !focused && !reloadWhenNotFocused) {
+                    needReloadingWhenFocused = enabled;
+                    window.clearInterval(idInterval);
+                    idInterval = null;
+                    return;
+                }
+                updateComments();
+            }
+
+        }
+    });
 }
 
 });
