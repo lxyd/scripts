@@ -37,7 +37,8 @@ var defaultConfig = {
     unstyleVisitedNewComments: false,  // 8.b    true/false   Убирать зелёную подсветку с комментов сразу после прочтения
     fixSameTopicCommentLinks: true,   // 9    true/false   При клике на ссылки вида http://tabun.everypony.ru/comments/<id> скроллить на коммент "#<id>", если он находится в этом же топике
     autoLoadInterval: 30,             // 10.a Целое число  Если не false и не 0, добавляет галочку для автоподгрузки добавленных комментов (минимальный интервал - 30)
-    autoLoadCheckedByDefault: false   // 10.b true/false   Стоит ли эта галочка по умолчанию
+    autoLoadCheckedByDefault: false,  // 10.b true/false   Стоит ли эта галочка по умолчанию
+    altToTitle: true                  // 11   true/false   Копировать поле alt у картинок в поле title, чтобы при наведении появлялась подсказка
 }, config = defaultConfig;
 
 //
@@ -176,6 +177,13 @@ if (config.guiConfig) {
                     $('<LABEL>').append(this.chk, "Убирать подсветку с прочитанных новых комментов").appendTo(container);
                 },
                 getCfg: function() { return { unstyleVisitedNewComments: this.chk.prop('checked') }; }
+            }
+          , { // 11. Копируем атрибуты ALT в TITLE
+                build: function(container, cfg) {
+                    this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.altToTitle);
+                    $('<LABEL>').append(this.chk, "Показывать атрибуты alt картинок в виде всплывающих подсказок").appendTo(container);
+                },
+                getCfg: function() { return { altToTitle: this.chk.prop('checked') }; }
             }
         );
 
@@ -411,7 +419,7 @@ if (config.changeDateFormat || config.localTime || config.relativeTime) {
 
         // Комменты, подгруженные динамически
         ls.hook.add('ls_comment_inject_after', function() {
-            process('.comment-date TIME', this);
+            process($('.comment-date TIME', this));
         });
 
         // Посты, подгруженные с помощью кнопки "получить ещё посты"
@@ -811,6 +819,7 @@ if (config.autoLoadInterval) {
             
             function timerFunc() {
                 if (!enabled || !focused && !reloadWhenNotFocused) {
+                    console.log('clearing');
                     needReloadingWhenFocused = enabled;
                     window.clearInterval(idInterval);
                     idInterval = null;
@@ -821,6 +830,45 @@ if (config.autoLoadInterval) {
 
         }
     });
+}
+
+//
+// 11. В картинках в топиках и комментах ALT -> TITLE
+//
+if (config.altToTitle) {
+    (function() {
+        var clsProcessed = 'tabun-fixes-alt-to-title-processed';
+
+        function process(elements) {
+            $(elements).each(function() {
+                var alt = this.getAttribute('alt')
+                  , title = this.getAttribute('title');
+
+                if (!title) {
+                    this.setAttribute('title', alt);
+                } else if (alt && title && alt != title) {
+                    this.setAttribute('title', title + "(alt: " + alt + ")");
+                }
+
+            }).addClass(clsProcessed);
+        }
+
+        // Комменты/посты, уже открытые на странице
+        $(function() {
+            process('IMG');
+        });
+
+        // Комменты, подгруженные динамически
+        ls.hook.add('ls_comment_inject_after', function() {
+            process($('IMG', this));
+        });
+
+        // Посты, подгруженные с помощью кнопки "получить ещё посты"
+        ls.hook.add('ls_userfeed_get_more_after', function() {
+            process($('IMG').not('.'+clsProcessed));
+        });
+
+    })();
 }
 
 });
