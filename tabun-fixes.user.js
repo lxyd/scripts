@@ -535,6 +535,8 @@ if ($('#comments').length && config.addHistoryTimeline) {
             chronology.push(id);
             if (showAll) {
                 visibleCommentsCount = chronology.length;
+            } else {
+                $('.comment', this).hide();
             }
         });
 
