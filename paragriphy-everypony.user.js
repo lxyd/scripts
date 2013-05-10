@@ -1,14 +1,29 @@
 // ==UserScript==
 // @name    Paragriphy Everypony
-// @version    5
-// @description    Преобразует br'ы в параграфы в топиках табуна и форума everypony.ru, а также в рассказах на stories
+// @version    6
+// @description    Преобразует br'ы в параграфы в топиках табуна и darkpony, форума everypony.ru, а также в рассказах на stories
+//
 // @include    http://tabun.everypony.ru/*
-// @include    http://forum.everypony.ru/*
-// @include    http://stories.everypony.ru/*
+// @include    https://tabun.everypony.ru/*
 // @match    http://tabun.everypony.ru/*
+// @match    https://tabun.everypony.ru/*
+//
+// @include    http://forum.everypony.ru/*
+// @include    https://forum.everypony.ru/*
 // @match    http://stories.everypony.ru/*
+// @match    https://stories.everypony.ru/*
+//
+// @include    http://stories.everypony.ru/*
+// @include    https://stories.everypony.ru/*
 // @match    http://forum.everypony.ru/*
-// @author   eeyup
+// @match    https://forum.everypony.ru/*
+//
+// @include    http://darkpony.ru/*
+// @include    https://darkpony.ru/*
+// @match    http://darkpony.ru/*
+// @match    https://darkpony.ru/*
+//
+// @author   Eeyup
 // ==/UserScript==
 
 (function(document, fn) {
@@ -116,7 +131,7 @@ function replaceDashes(node, starting, ending) {
                     ending && i == node.children.length - 1)
         }
     } else {
-        node.textContent = node.textContent.replace(/(\s?)-(\s?)/g,
+        node.textContent = node.textContent.replace(/(\s?)(?:-|–)(\s?)/g,
                 function(match, l, r, offset, text) {
                     if (!l && offset == 0)
                         return starting ? "— " : match;
@@ -166,6 +181,21 @@ $(function() {
                         return false
                     })
                 )
+            );
+            break;
+        case 'darkpony.ru':
+            $('.post .post-header:not(:last-child) P').append(
+                $('<A style="color:#AAA; margin-left: 5pt" href="#">Paragriphy&nbsp;&para;</A>').bind('click', function() {
+                    attachStyleIfNotYet('.post P { text-indent: 15pt; margin: 5pt 0 0; text-align: justify } .post .post-header P { margin-top: 0; text-indent: 0; }');
+                    handleBlock($(this).closest('.post'), '.post-header P');
+
+                    $('P', $(this).closest('.post')).not('.post-header P').each(function() {
+                        replaceDashes(this);
+                    });
+
+                    $(this).remove();
+                    return false
+                })
             );
             break;
     }
