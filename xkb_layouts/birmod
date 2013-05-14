@@ -1,0 +1,58 @@
+// Layout with typography symbols
+// This is a modified version of the Ilya Birman's layout
+// Alexey Dubinin <lxyd@lxyd.net>
+
+partial default alphanumeric_keys
+xkb_symbols "base" {
+    key <TLDE> { [ NoSymbol, NoSymbol, NoSymbol,      U0300        ] }; // COMBINING GRAVE ACCENT
+    key <AE01> { [ NoSymbol, NoSymbol, onesuperior,   exclamdown   ] };
+    key <AE02> { [ NoSymbol, NoSymbol, twosuperior,   onehalf      ] };
+    key <AE03> { [ NoSymbol, NoSymbol, threesuperior, onethird     ] };
+    key <AE04> { [ NoSymbol, NoSymbol, dollar,        onequarter   ] };
+    key <AE05> { [ NoSymbol, NoSymbol, EuroSign,      permille     ] };
+    key <AE06> { [ NoSymbol, NoSymbol, uparrow,       U0302        ] }; // COMBINING CIRCUMFLEX ACCENT
+    key <AE07> { [ NoSymbol, NoSymbol, ampersand,     questiondown ] };
+    key <AE08> { [ NoSymbol, NoSymbol, infinity,      oneeighth    ] };
+    key <AE09> { [ NoSymbol, NoSymbol, leftarrow,     ifonlyif     ] };
+    key <AE10> { [ NoSymbol, NoSymbol, rightarrow,    implies      ] };
+    key <AE11> { [ NoSymbol, NoSymbol, emdash,        endash       ] };
+    key <AE12> { [ NoSymbol, NoSymbol, notequal,      plusminus    ] };
+
+    key <AD01> { [ NoSymbol, NoSymbol, NoSymbol,      U0306      ] }; // COMBINING BREVE
+    key <AD02> { [ NoSymbol, NoSymbol, ssharp,        U1E9E      ] }; // S SHARP (SMALL AND CAPITAL)
+    key <AD03> { [ NoSymbol, NoSymbol, EuroSign,      NoSymbol   ] };
+    key <AD04> { [ NoSymbol, NoSymbol, registered,    U030A      ] }; // COMBINING RING ABOVE
+    key <AD05> { [ NoSymbol, NoSymbol, trademark,     U0308      ] }; // COMBINING DIAERESIS
+    key <AD06> { [ NoSymbol, NoSymbol, yen,           NoSymbol   ] };
+    key <AD07> { [ NoSymbol, NoSymbol, NoSymbol,      NoSymbol   ] };
+    key <AD08> { [ NoSymbol, NoSymbol, U2039,         NoSymbol   ] }; // SINGLE LEFT-POINTING ANGLE QUOTATION MARK (RARE)
+    key <AD09> { [ NoSymbol, NoSymbol, U203A,         NoSymbol   ] }; // SINGLE RIGHT-POINTING ANGLE QUOTATION MARK (RARE)
+    key <AD10> { [ NoSymbol, NoSymbol, minutes,       seconds    ] };
+    key <AD11> { [ NoSymbol, NoSymbol, bracketleft,   braceleft  ] };
+    key <AD12> { [ NoSymbol, NoSymbol, bracketright,  braceright ] };
+
+    key <AC01> { [ NoSymbol, NoSymbol, approxeq,      U2318      ] }; // COMMAND KEY SIGN
+    key <AC02> { [ NoSymbol, NoSymbol, ssharp,        U1E9E      ] }; // S SHARP (SMALL AND CAPITAL)
+    key <AC03> { [ NoSymbol, NoSymbol, degree,        U2300      ] }; // DIAMETER
+    key <AC04> { [ NoSymbol, NoSymbol, sterling,      NoSymbol   ] };
+    key <AC05> { [ NoSymbol, NoSymbol, NoSymbol,      NoSymbol   ] };
+    key <AC06> { [ NoSymbol, NoSymbol, NoSymbol,      NoSymbol   ] };
+    key <AC07> { [ NoSymbol, NoSymbol, U201F,         U201B      ] }; // DOUBLE AND SINGLE HIGHT REVERSED-9 QUOTATION MARKS (RARE)
+    key <AC08> { [ NoSymbol, NoSymbol, doublelowquotemark,   singlelowquotemark   ] };
+    key <AC09> { [ NoSymbol, NoSymbol, leftdoublequotemark,  leftsinglequotemark  ] };
+    key <AC10> { [ NoSymbol, NoSymbol, rightdoublequotemark, rightsinglequotemark ] };
+    key <AC11> { [ NoSymbol, NoSymbol, NoSymbol,      NoSymbol   ] };
+
+    key <AB01> { [ NoSymbol, NoSymbol, NoSymbol,      U0327      ] }; // COMBINING CEDILLA
+    key <AB02> { [ NoSymbol, NoSymbol, multiply,      U22C5      ] }; // DOT MULTIPLY
+    key <AB03> { [ NoSymbol, NoSymbol, copyright,     cent       ] };
+    key <AB04> { [ NoSymbol, NoSymbol, downarrow,     U030C      ] }; // COMBININT CARON
+    key <AB05> { [ NoSymbol, NoSymbol, NoSymbol,      NoSymbol   ] };
+    key <AB06> { [ NoSymbol, NoSymbol, section,       U0303      ] }; // COMBINING TILDE
+    key <AB07> { [ NoSymbol, NoSymbol, enfilledcircbullet, U2212 ] }; // MINUS SIGN
+    key <AB08> { [ NoSymbol, NoSymbol, guillemotleft,  less      ] };
+    key <AB09> { [ NoSymbol, NoSymbol, guillemotright, greater   ] };
+    key <AB10> { [ NoSymbol, NoSymbol, ellipsis,      U0301      ] }; // COMBINING ACUTE ACCENT
+
+    key <SPCE> { [ NoSymbol, NoSymbol, nobreakspace,  hyphen     ] };
+};
