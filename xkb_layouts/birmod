@@ -2,7 +2,7 @@
 // This is a modified version of the Ilya Birman's layout
 // Alexey Dubinin <lxyd@lxyd.net>
 
-partial default alphanumeric_keys
+partial default
 xkb_symbols "base" {
     key <TLDE> { [ NoSymbol, NoSymbol, NoSymbol,      U0300        ] }; // COMBINING GRAVE ACCENT
     key <AE01> { [ NoSymbol, NoSymbol, onesuperior,   exclamdown   ] };
@@ -54,5 +54,5 @@ xkb_symbols "base" {
     key <AB09> { [ NoSymbol, NoSymbol, guillemotright, greater   ] };
     key <AB10> { [ NoSymbol, NoSymbol, ellipsis,      U0301      ] }; // COMBINING ACUTE ACCENT
 
-    key <SPCE> { [ NoSymbol, NoSymbol, nobreakspace,  hyphen     ] };
+    key <SPCE> { [ space,    space,    nobreakspace,  hyphen     ] };
 };
