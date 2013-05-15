@@ -54,5 +54,5 @@ xkb_symbols "base" {
     key <AB09> { [ NoSymbol, NoSymbol, guillemotright,     greater      ] };
     key <AB10> { [ NoSymbol, NoSymbol, ellipsis,           dead_acute   ] };
 
-    key <SPCE> { [ space,    space,    hyphen,             nobreakspace ] };
+    key <SPCE> { [ space,    space,    nobreakspace,       hyphen       ] };
 };
