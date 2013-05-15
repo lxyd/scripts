@@ -43,16 +43,16 @@ xkb_symbols "base" {
     key <AC10> { [ NoSymbol, NoSymbol, rightdoublequotemark, rightsinglequotemark ] };
     key <AC11> { [ NoSymbol, NoSymbol, apostrophe,           quotedbl             ] };
 
-    key <AB01> { [ NoSymbol, NoSymbol, division,           dead_cedilla ] };
-    key <AB02> { [ NoSymbol, NoSymbol, multiply,           U22C5        ] }; // DOT MULTIPLY
-    key <AB03> { [ NoSymbol, NoSymbol, copyright,          cent         ] };
-    key <AB04> { [ NoSymbol, NoSymbol, downarrow,          dead_caron   ] };
-    key <AB05> { [ NoSymbol, NoSymbol, ssharp,             U1E9E        ] }; // S SHARP (SMALL AND CAPITAL)
-    key <AB06> { [ NoSymbol, NoSymbol, section,            dead_tilde   ] };
-    key <AB07> { [ NoSymbol, NoSymbol, enfilledcircbullet, U2212        ] }; // MINUS SIGN
-    key <AB08> { [ NoSymbol, NoSymbol, guillemotleft,      less         ] };
-    key <AB09> { [ NoSymbol, NoSymbol, guillemotright,     greater      ] };
-    key <AB10> { [ NoSymbol, NoSymbol, ellipsis,           dead_acute   ] };
+    key <AB01> { [ NoSymbol, NoSymbol, division,       dead_cedilla       ] };
+    key <AB02> { [ NoSymbol, NoSymbol, multiply,       U22C5              ] }; // DOT MULTIPLY
+    key <AB03> { [ NoSymbol, NoSymbol, copyright,      cent               ] };
+    key <AB04> { [ NoSymbol, NoSymbol, downarrow,      dead_caron         ] };
+    key <AB05> { [ NoSymbol, NoSymbol, ssharp,         U1E9E              ] }; // S SHARP (SMALL AND CAPITAL)
+    key <AB06> { [ NoSymbol, NoSymbol, section,        dead_tilde         ] };
+    key <AB07> { [ NoSymbol, NoSymbol, U2212,          enfilledcircbullet ] }; // MINUS SIGN
+    key <AB08> { [ NoSymbol, NoSymbol, guillemotleft,  less               ] };
+    key <AB09> { [ NoSymbol, NoSymbol, guillemotright, greater            ] };
+    key <AB10> { [ NoSymbol, NoSymbol, ellipsis,       dead_acute         ] };
 
-    key <SPCE> { [ space,    space,    nobreakspace,       hyphen       ] };
+    key <SPCE> { [ space,    space,    nobreakspace,   hyphen             ] };
 };
