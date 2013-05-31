@@ -155,7 +155,7 @@ $(function() {
             );
             break;
         case 'stories.everypony.ru':
-            $('.story-panel').append(
+            $('.storypanel').append(
                 $('<A style="color:#AAA; float: right; font-weight:bold" href="#">Paragriphy&nbsp;&para;</A>').bind('click', function() {
                     attachStyleIfNotYet('.chapter-text P { text-indent: 15pt; margin: 5pt 0 0; text-align: justify }');
                     handleBlock($('.chapter-text'));
