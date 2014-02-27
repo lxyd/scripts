@@ -85,11 +85,11 @@
                 contentElem.innerHTML = text;
 
                 anchors = $$('#content A');
-                document.addEventListener('keypress', function(e) {
-                    switch (e.keyCode || e.which) {
-                        case 's'.charCodeAt(0): startStop(); break;
-                        case 'j'.charCodeAt(0): slower(); break;
-                        case 'k'.charCodeAt(0): faster(); break;
+                document.addEventListener('keyup', function(e) {
+                    switch (e.keyCode) {
+                        case 83 /*s*/: startStop(); break;
+                        case 74 /*j*/: slower(); break;
+                        case 75 /*k*/: faster(); break;
                     }
                 });
 
