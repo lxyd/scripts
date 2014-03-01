@@ -19,6 +19,9 @@
     document.body.removeChild(script); // clean up
 })(document, function(window, document) {
 
+if (window.top !== window.self) {
+    return;
+}
 
 var pointNode = (function() {
     var style = "background: #FF0;";
