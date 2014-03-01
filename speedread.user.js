@@ -235,7 +235,8 @@ var screener = createElement('div', {
         height:      '100%',
         background:  'rgba(100,100,100,0.9)',
         display:     'none',
-    }, document.body)
+        zIndex:      '2000000000',
+    })
   , frame = createElement('div', {
         fontSize:    '12pt',
         whiteSpace:  'nowrap',
@@ -249,7 +250,8 @@ var screener = createElement('div', {
         background:  '#FFF',
         border:      '1px solid #555',
         display:     'none',
-    }, document.body)
+        zIndex:      '2000000001',
+    })
   , left = createElement('div', {
         position:    'relative',
         height:      '16pt',
@@ -338,6 +340,8 @@ function beginRead(text) {
     screener.style.display = 'block';
     frame.style.display = 'block';
     document.addEventListener('keydown', keyListener);
+    document.body.appendChild(screener);
+    document.body.appendChild(frame);
 
     tick(WAIT_ON_NEXT);
 }
@@ -349,6 +353,8 @@ function endRead() {
     screener.style.display = 'none';
     frame.style.display = 'none';
     document.removeEventListener('keydown', keyListener);
+    document.body.removeChild(screener);
+    document.body.removeChild(frame);
 }
 
 function lengthCoefficient(l) {
