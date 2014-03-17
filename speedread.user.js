@@ -1,7 +1,8 @@
 // ==UserScript==
 // @name SpeedRead
-// @version 1
+// @version 0.2
 // @description On an ALT+R begins speed-reading the pointed block
+// @updateURL https://github.com/lxyd/scripts/raw/master/speedread.meta.js
 //
 // @include http://*
 // @include https://*
@@ -9,6 +10,9 @@
 // @match https://*
 //
 // @author lxyd
+//
+// @run-at document-end
+//
 // ==/UserScript==
 
 (function(document, fn) {
@@ -330,7 +334,7 @@ var keyListener = function(e) {
 }
 
 var interval = 120
-  , delta = 20
+  , delta = 10
   , timeoutId = null
   , curIdx = -1
   , usePunctuation = true
