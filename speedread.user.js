@@ -1,8 +1,9 @@
 // ==UserScript==
 // @name SpeedRead
-// @version 0.2
-// @description On an ALT+R begins speed-reading the pointed block
+// @version 0.3
+// @description On an ALT+R begins speed-reading the pointed block. Keys: s-start/stop, j-slower, k-faster
 // @updateURL https://github.com/lxyd/scripts/raw/master/speedread.meta.js
+// @downloadURL https://github.com/lxyd/scripts/raw/master/speedread.user.js
 //
 // @include http://*
 // @include https://*
@@ -119,7 +120,7 @@ function split(text) {
         return s.replace(reNonWordLeft, "").replace(reNonWordRight, "");
     }
 
-    var re = /[-–—\s]+/g
+    var re = /[-–—\s.,]+/g
       , reMergeableHeavyLeft = /^[-–]$/
       , reMergeableHeavyRight = /^\s*$/
       , pos = 0
