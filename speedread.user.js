@@ -7,8 +7,8 @@
 //
 // @include http://*
 // @include https://*
-// @match http://*
-// @match https://*
+// @match http://*/*
+// @match https://*/*
 //
 // @author lxyd
 //
@@ -59,15 +59,20 @@ var pointNode = (function() {
             doc.removeEventListener('click', onClick, true);
             doc.removeEventListener('keydown', onKeyDown, true);
         }
-
+        
+		function getTarget(ev) {
+			var event = ev || window.event;
+			return event.target || event.srcElement;
+		}
+		
         function onMouseOver(ev) {
-            e = ev.originalTarget;
+            e = getTarget(ev);
             addStyle(e);
         }
 
         function onMouseMove(ev) {
             if (e == null) {
-                e = ev.originalTarget;
+                e = getTarget(ev);
                 addStyle(e);
             }
         }
