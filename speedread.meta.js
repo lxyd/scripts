@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name SpeedRead
-// @version 0.4
+// @version 0.5
 // @description On an ALT+R begins speed-reading the pointed block. Keys: s-start/stop, j-slower, k-faster
 // @updateURL https://github.com/lxyd/scripts/raw/master/speedread.meta.js
 // @downloadURL https://github.com/lxyd/scripts/raw/master/speedread.user.js
