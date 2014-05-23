@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    7
+// @version    8
 // @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
@@ -48,6 +48,7 @@ var defaultConfig = {
     autoLoadCheckedByDefault: false,  // 10.b true/false   Стоит ли эта галочка по умолчанию
     altToTitle: true,                 // 11   true/false   Копировать поле alt у картинок в поле title, чтобы при наведении появлялась подсказка
     alterMirrorsLinks: true,          // 12   true/false   Преобразовывать ссылки на другие зеркала табуна
+    openInnerSpoilersWithShiftOrLongClick: true, // 13   true/false   Открывать вложенные спойлеры, если при нажатии на него был зажат шифт или клик был длинным (0.5 сек)
 }, config = defaultConfig;
 
 //
@@ -110,6 +111,13 @@ if (config.guiConfig) {
                         autoLoadCheckedByDefault: this.chkByDefault.prop('checked')
                     }
                 }
+            }
+          , { // 13. Открывать вложенные спойлеры, если спойлер открывается с Shift'ом или двойным кликом
+                build: function(container, cfg) {
+                    this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.openInnerSpoilersWithShiftOrLongClick);
+                    $('<LABEL>').append(this.chk, "Открывать вложенные спойлеры, если спойлер открывается с Shift'ом или длинным кликом (0.5 сек)").appendTo(container);
+                },
+                getCfg: function() { return { openInnerSpoilersWithShiftOrLongClick: this.chk.prop('checked') }; }
             }
           , { // 4 Переформатирование дат
                 build: function(container, cfg) {
@@ -1014,6 +1022,51 @@ if (config.alterMirrorsLinks) {
             // altering href
             self.attr('href', newHref);
 
+        });
+    })();
+}
+
+//
+// 13. Открывать вложенные спойлеры, если спойлер открывается с Shift'ом или длинным кликом (0.5 сек)
+//
+if (config.openInnerSpoilersWithShiftOrLongClick) {
+    (function() {
+        var timeMouseDown = 0;
+        
+        function getNow() {
+            return Date.now ? Date.now() : new Date().getTime();
+        }
+        
+        function setAllSpoilersOpen(elBlock, open) {
+            $('.spoiler-body', elBlock).css('display', open ? 'block' : 'none');   
+        }
+
+        function processInnerSpoilers(elTitle, invert) {
+            var elBody = $(elTitle).next('.spoiler-body')
+              , opening = !elBody.is(':visible'); // if body is not yet visible, we are probably opening it
+            
+            if (invert) {
+                opening = !opening;
+            }
+
+            if (opening) {
+                setAllSpoilersOpen(elBody, true);
+            } else {
+                window.setTimeout(function() {
+                    setAllSpoilersOpen(elBody, false);
+                }, 400);
+            }
+        }
+
+        $(document).on('mousedown', '.spoiler-title', function(ev) {
+            timeMouseDown = getNow();
+        });
+
+        $(document).on('click', '.spoiler-title', function(ev) {
+            if (ev.shiftKey || (timeMouseDown && (getNow() - timeMouseDown > 500))) {
+                processInnerSpoilers(this);
+            }
+            timeMouseDown = 0;
         });
     })();
 }
