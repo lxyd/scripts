@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    6
+// @version    7
 // @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
@@ -46,7 +46,8 @@ var defaultConfig = {
     fixSameTopicCommentLinks: true,   // 9    true/false   При клике на ссылки вида http://tabun.everypony.ru/comments/<id> скроллить на коммент "#<id>", если он находится в этом же топике
     autoLoadInterval: 30,             // 10.a Целое число  Если не false и не 0, добавляет галочку для автоподгрузки добавленных комментов (минимальный интервал - 30)
     autoLoadCheckedByDefault: false,  // 10.b true/false   Стоит ли эта галочка по умолчанию
-    altToTitle: true                  // 11   true/false   Копировать поле alt у картинок в поле title, чтобы при наведении появлялась подсказка
+    altToTitle: true,                 // 11   true/false   Копировать поле alt у картинок в поле title, чтобы при наведении появлялась подсказка
+    alterMirrorsLinks: true,          // 12   true/false   Преобразовывать ссылки на другие зеркала табуна
 }, config = defaultConfig;
 
 //
@@ -77,6 +78,16 @@ if (config.guiConfig) {
                     $('<LABEL>').append(this.chk, "При клике на ссылку на коммент, скроллить на него, если он находится в этом же топике (такие ссылки будут зеленеть при наведении)").appendTo(container);
                 },
                 getCfg: function() { return { fixSameTopicCommentLinks: this.chk.prop('checked') }; }
+            }
+          , { // 12. Преобразование ссылок на другие зеркала
+                build: function(container, cfg) {
+                    var host = window.location.host
+                      , hosts = ['tabun.everypony.ru', 'tabun.everypony.info', 'табун.всепони.рф'].filter(function(h){return h != host});
+
+                    this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.alterMirrorsLinks);
+                    $('<LABEL>').append(this.chk, "Открывать ссылки на другие зеркала (" + hosts.join(', ') + ") на текущем зеркале (" + host + ")").appendTo(container);
+                },
+                getCfg: function() { return { alterMirrorsLinks: this.chk.prop('checked') }; }
             }
           , { // 10. Автоподгрузка комментов
                 build: function(container, cfg) {
@@ -969,6 +980,41 @@ if (config.altToTitle) {
             process($('IMG').not('.'+clsProcessed));
         });
 
+    })();
+}
+
+//
+// 12. Преобразование ссылок на другие зеркала
+//
+if (config.alterMirrorsLinks) {
+    (function() {
+        var host = window.location.host
+          , hosts = ['tabun.everypony.ru', 'tabun.everypony.info', 'табун.всепони.рф'].filter(function(h){return h != host})
+          , selector = hosts.map(function(h){return'A[href^="http://'+h+'"]'}).join(', ')
+          , rootLinkRe = /^https?:\/\/[^\/]*\/*$/;
+
+        function isRootLink(href) {
+            return rootLinkRe.test(href);
+        }
+
+        $(document).on('mousedown', selector, function(ev) {
+
+            var self = $(this)
+              , href = self.attr('href')
+              , newHref = href;
+
+            if (isRootLink(href)) {
+                return; // we don't alter links to the root pages of sites
+            }
+
+            hosts.forEach(function(h) {
+                newHref = newHref.replace(h, host); // first appearance is enough
+            });
+
+            // altering href
+            self.attr('href', newHref);
+
+        });
     })();
 }
 
