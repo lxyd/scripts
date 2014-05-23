@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    10
+// @version    11
 // @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
@@ -50,6 +50,8 @@ var defaultConfig = {
     alterMirrorsLinks: true,          // 12   true/false   Преобразовывать ссылки на другие зеркала табуна
     openInnerSpoilersWithShiftOrLongClick: true, // 13   true/false   Открывать вложенные спойлеры, если при нажатии на него был зажат шифт или клик был длинным (0.5 сек)
     boostScrollToComment: true,       // 14   true/false   Ускорить scrollToComment (не выключается в графическом конфиге)
+    liteSpoilersAlwaysOpen: false,    // 15   true/false   Светить буквами в лайт-спойлерах
+    liteSpoilersOpenOnBlockHover: false, // 16 true/false  Открывать лайт-спойлеры по наведению на коммент/пост
 }, config = defaultConfig;
 
 //
@@ -120,6 +122,20 @@ if (config.guiConfig) {
                 },
                 getCfg: function() { return { openInnerSpoilersWithShiftOrLongClick: this.chk.prop('checked') }; }
             }
+          , { // 15. Всегла светить буквы в лайт-спойлерах
+                build: function(container, cfg) {
+                    this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.liteSpoilersAlwaysOpen);
+                    $('<LABEL>').append(this.chk, "Всегла светить буквы в лайт-спойлерах").appendTo(container);
+                },
+                getCfg: function() { return { liteSpoilersAlwaysOpen: this.chk.prop('checked') }; }
+            }
+          , { // 16. Открывать лайт-спойлеры по наведению на коммент/пост
+                build: function(container, cfg) {
+                    this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.liteSpoilersOpenOnBlockHover);
+                    $('<LABEL>').append(this.chk, "Открывать лайт-спойлеры по наведению на коммент/пост").appendTo(container);
+                },
+                getCfg: function() { return { liteSpoilersOpenOnBlockHover: this.chk.prop('checked') }; }
+            }
           , { // 4 Переформатирование дат
                 build: function(container, cfg) {
                     this.txtFormat = $('<INPUT>', { type: 'text' }).val(cfg.changeDateFormat || "").prop('disabled', !cfg.changeDateFormat);
@@ -134,8 +150,7 @@ if (config.guiConfig) {
                         "<BR/><P style=\"padding-left: 20px\">Формат дат: строка вроде \"d MMMM yyyy, HH:mm\", где:<BR/>" +
                         "yyyy, yy - год (2013 или 13)<BR/>" +
                         "MMMM, MMM, MM, M - месяц (февраля, фев, 02, 2)<BR/>" +
-                        "dd, d - день (09 или 9)<BR/>" +
-                        "HH, H - часы, mm, m - минуты, ss, s - секунды</P>",
+                        "dd, d - день, HH, H - часы, mm, m - минуты, ss, s - секунды (09 или 9)</P>",
                         $('<LABEL>').append(this.chkLocal, "Отображать локальное время вместо московского"), "<BR/>",
                         $('<LABEL>').append(this.chkRelative, "Отображать время в виде \"5 минут назад\"")
                     );
@@ -1088,5 +1103,45 @@ if (config.boostScrollToComment) {
     }
 }
 
+//
+// 15. Светить буквами в лайт-спойлерах
+//
+if (config.liteSpoilersAlwaysOpen) {
+    (function() {
+        $('<STYLE>').text(
+            '.spoiler-gray { background-color: #EEE; color: #999; } ' +
+            '.spoiler-gray:hover { background-color: transparent; color: #666; } ' +
+            '.spoiler-gray A, .spoiler-gray A:visited { color: #66AAFF; } ' +
+            '.spoiler-gray:hover A { background-color: transparent; color: #0099FF; } '
+        ).appendTo(document.head);
+    })();
+}
+
+//
+// 16. Открывать лайт-спойлеры по наведению на коммент/пост
+//
+if (config.liteSpoilersOpenOnBlockHover) {
+    (function() {
+        var containers = ['.comment', '.comment-preview', '.topic', '.profile-info-about']
+          , selectorSpoiler = containers.map(function(s) { return s + ':hover .spoiler-gray' }).join(', ')
+          , selectorA = containers.map(function(s) { return s + ':hover .spoiler-gray A' }).join(', ')
+          , selectorAVisited = containers.map(function(s) { return s + ':hover .spoiler-gray A:visited' }).join(', ')
+            // и более специфичные селекторы для оригинального лайтспойлера в наведённом состоянии (иначе эти стили не пробиваются через наши)
+          , selectorHoverSpoiler = containers.map(function(s) { return s + ':hover .spoiler-gray:hover' }).join(', ')
+          , selectorHoverA = containers.map(function(s) { return s + ':hover .spoiler-gray:hover A' }).join(', ')
+          , selectorHoverAVisited = containers.map(function(s) { return s + ':hover .spoiler-gray:hover A:visited' }).join(', ')
+
+
+        $('<STYLE>').text(
+            selectorSpoiler + ' { background-color: #EEE; color: #999; } ' +
+            selectorA + ' { color: #66AAFF; } ' +
+            selectorAVisited + ' { color: #66AAFF; } ' +
+            // и более специфичные селекторы для оригинального лайтспойлера в наведённом состоянии (иначе эти стили не пробиваются через наши)
+            selectorHoverSpoiler + ' { background-color: transparent; color: #666; } ' +
+            selectorHoverA + ' { background-color: transparent; color: #0099FF; } ' +
+            selectorHoverAVisited + ' { background-color: transparent; color: #0099FF; } '
+        ).appendTo(document.head);
+    })();
+}
 
 });
