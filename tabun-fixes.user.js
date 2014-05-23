@@ -122,10 +122,10 @@ if (config.guiConfig) {
                 },
                 getCfg: function() { return { openInnerSpoilersWithShiftOrLongClick: this.chk.prop('checked') }; }
             }
-          , { // 15. Всегла светить буквы в лайт-спойлерах
+          , { // 15. Всегда светить буквы в лайт-спойлерах
                 build: function(container, cfg) {
                     this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.liteSpoilersAlwaysOpen);
-                    $('<LABEL>').append(this.chk, "Всегла светить буквы в лайт-спойлерах").appendTo(container);
+                    $('<LABEL>').append(this.chk, "Всегда светить буквы в лайт-спойлерах").appendTo(container);
                 },
                 getCfg: function() { return { liteSpoilersAlwaysOpen: this.chk.prop('checked') }; }
             }
