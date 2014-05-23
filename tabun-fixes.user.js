@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    8
+// @version    9
 // @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
@@ -1031,7 +1031,8 @@ if (config.alterMirrorsLinks) {
 //
 if (config.openInnerSpoilersWithShiftOrLongClick) {
     (function() {
-        var timeMouseDown = 0;
+        var timeMouseDown = 0
+          , bodyIsVisibleOnMouseDown;
         
         function getNow() {
             return Date.now ? Date.now() : new Date().getTime();
@@ -1041,14 +1042,10 @@ if (config.openInnerSpoilersWithShiftOrLongClick) {
             $('.spoiler-body', elBlock).css('display', open ? 'block' : 'none');   
         }
 
-        function processInnerSpoilers(elTitle, invert) {
+        function processInnerSpoilers(elTitle) {
             var elBody = $(elTitle).next('.spoiler-body')
-              , opening = !elBody.is(':visible'); // if body is not yet visible, we are probably opening it
+              , opening = !bodyIsVisibleOnMouseDown; // if body is not yet visible, we are probably opening it
             
-            if (invert) {
-                opening = !opening;
-            }
-
             if (opening) {
                 setAllSpoilersOpen(elBody, true);
             } else {
@@ -1059,6 +1056,7 @@ if (config.openInnerSpoilersWithShiftOrLongClick) {
         }
 
         $(document).on('mousedown', '.spoiler-title', function(ev) {
+            bodyIsVisibleOnMouseDown = $(this).next('.spoiler-body').is(':visible');
             timeMouseDown = getNow();
         });
 
