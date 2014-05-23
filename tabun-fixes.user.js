@@ -1,9 +1,17 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    5
+// @version    6
 // @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
-// @include    http://tabun.everypony.ru/*
+//
+// @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
+// @downloadURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.user.js
+//
+// @include  http://tabun.everypony.ru/*
 // @match    http://tabun.everypony.ru/*
+// @include  http://tabun.everypony.info/*
+// @match    http://tabun.everypony.info/*
+// @include  http://табун.всепони.рф/*
+// @match    http://табун.всепони.рф/*
 // @author   eeyup
 // ==/UserScript==
 
@@ -56,7 +64,7 @@ if (config.guiConfig) {
             } catch (err) {
                 alert("Ошибка загрузки конфига скрипта TabunFixes: настройки будут сброшены на умолчальные");
                 window.localStorage.removeItem(lsKey);
-                return;
+                config = $.extend({}, defaultConfig);
             }
         }
         
@@ -442,14 +450,19 @@ if ($('#comments').length && config.addHistoryTimeline) {
         var idChronology = 'tabun-fixes-chronology'
           , idChronologyPlus = 'tabun-fixes-chronology-plus'
           , idChronologyMinus = 'tabun-fixes-chronology-minus'
+          , idChronologyPlay = 'tabun-fixes-chronology-play'
           , idChronologyTimeline = 'tabun-fixes-chronology-timeline'
-          , idChronologySlider = 'tabun-fixes-chronology-slider';
+          , idChronologySlider = 'tabun-fixes-chronology-slider'
+          , classChronologyDisabled = 'tabun-fixes-chronology-disabled'
+          , containerSelector = '#widemode';
 
         $('<STYLE>').text(
-            '#' + idChronologyTimeline + ' { display:inline-block; position:relative; overflow:visible; height:5px; margin:3px 10px; border-radius:2px; background:#CCCCCF } ' +
-            '#' + idChronologySlider + ' { position:absolute; top:-3px; left:0; height:11px; width:10px; border-radius:2px; background:#889; cursor:pointer } ' +
-            '#' + idChronologyPlus + ' { margin-right:5px; z-index:10 } ' +
-            '#' + idChronologyMinus + ' { margin-left:5px; z-index:10 } '
+            containerSelector + ' #' + idChronologyTimeline     + ' { display:inline-block; position:relative; overflow:visible; height:5px; margin:3px 5px; border-radius:2px; background:#CCCCCF } ' +
+            containerSelector + ' #' + idChronologySlider       + ' { position:absolute; top:-3px; left:0; height:11px; width:10px; border-radius:2px; background:#889; cursor:pointer } ' +
+            containerSelector + ' A#' + idChronologyPlay        + ' { margin:0 10px 0 10px; z-index:10; text-decoration:none }' +
+            containerSelector + ' A#' + idChronologyPlus        + ' { margin:0 0 0 5px; z-index:10; text-decoration:none } ' +
+            containerSelector + ' A#' + idChronologyMinus       + ' { margin:0 5px 0 0; z-index:10; text-decoration:none } ' +
+            containerSelector + ' A.' + classChronologyDisabled + ' { color:#AAA; cursor:default }'
         ).appendTo(document.head);
 
         var startScrollTimeout = null;
@@ -467,14 +480,38 @@ if ($('#comments').length && config.addHistoryTimeline) {
 
             elSlider.css( 'left', Math.round( pos * (elTimeline.width() - elSlider.width()) ) );
         };
+        
+        var updateButtons = function() {
+            var elPlus = $('#' + idChronologyPlus)
+              , elMinus = $('#' + idChronologyMinus);
+            
+            if (chronology.length < 1) {
+                elPlus.addClass(classChronologyDisabled);
+                elMinus.addClass(classChronologyDisabled);
+            } else if (visibleCommentsCount == 0) {
+                elPlus.removeClass(classChronologyDisabled);
+                elMinus.addClass(classChronologyDisabled);
+            } else if (visibleCommentsCount == chronology.length) {
+                elPlus.addClass(classChronologyDisabled);
+                elMinus.removeClass(classChronologyDisabled);
+            } else {
+                elPlus.removeClass(classChronologyDisabled);
+                elMinus.removeClass(classChronologyDisabled);
+            }
+        }
+        
+        var updateUI = function() {
+            updateSliderPosition();
+            updateButtons();
+        }
 
-        var scrollToLastVisibleComment = function() {
+        var scrollToLatestVisibleComment = function() {
             if (visibleCommentsCount > 0 && visibleCommentsCount <= chronology.length) {
                 ls.comments.scrollToComment(chronology[visibleCommentsCount-1]);
             }
         };
 
-        var setVisibleCommentsCount = function(cnt) {
+        var setVisibleCommentsCount = function(cnt, highlightNewlyAppeared) {
             if (cnt > chronology.length) {
                 cnt = chronology.length;
             } else if (cnt < 0) {
@@ -484,15 +521,25 @@ if ($('#comments').length && config.addHistoryTimeline) {
             // if cnt > visibleCommentsCount
             for (var i = visibleCommentsCount; i < cnt; i++) {
                 $('#comment_id_' + chronology[i]).show();
+                if (highlightNewlyAppeared) {
+                    $('#comment_id_' + chronology[i]).addClass(ls.comments.options.classes.comment_new);
+                }
             }
             // if <
             for (var i = cnt; i < visibleCommentsCount; i++) {
                 $('#comment_id_' + chronology[i]).hide();
             }
-
+            
             visibleCommentsCount = cnt;
 
-            updateSliderPosition();
+            if (highlightNewlyAppeared) {
+                if (ls.comments.aNewComment) {
+                    ls.comments.aCommentNew.length = 0;
+                }
+                ls.comments.calcNewComments();
+            }
+
+            updateUI();
         };
 
         function onMouseMove(ev) {
@@ -511,7 +558,7 @@ if ($('#comments').length && config.addHistoryTimeline) {
                 clearTimeout(startScrollTimeout);
             }
             startScrollTimeout = setTimeout(function() {
-                scrollToLastVisibleComment();
+                scrollToLatestVisibleComment();
                 startScrollTimeout = null;
             }, 500);
 
@@ -524,7 +571,7 @@ if ($('#comments').length && config.addHistoryTimeline) {
                 clearTimeout(startScrollTimeout);
                 startScrollTimeout = null;
             }
-            scrollToLastVisibleComment();
+            scrollToLatestVisibleComment();
             return false;
         };
 
@@ -551,12 +598,12 @@ if ($('#comments').length && config.addHistoryTimeline) {
 
             $('#widemode').prepend('<BR/>').prepend(
                 $('<SPAN>').attr('id', idChronology).append(
-                    $('<A href="javascript:void(0)">-1</A>').attr('id', idChronologyPlus).click(function() {
+                    $('<A href="javascript:void(0)">-1</A>').attr('id', idChronologyMinus).click(function() {
                         setVisibleCommentsCount(visibleCommentsCount - 1);
-                        scrollToLastVisibleComment();
-                    })
+                        scrollToLatestVisibleComment();
+                    }).attr('title', 'История комментов: на один в прошлое')
                 ).append(
-                    $('<DIV>').css('width', $('#widemode').width() - 70).attr('id', idChronologyTimeline).append(
+                    $('<DIV>').css('width', $('#widemode').width() - 75).attr('id', idChronologyTimeline).append(
                         $('<DIV>').attr('id', idChronologySlider).on('mousedown', function() {
                             $(document).on('mousemove', onMouseMove).on('mouseup', onMouseUp);
                             return false;
@@ -566,18 +613,29 @@ if ($('#comments').length && config.addHistoryTimeline) {
                           , pos = ev.pageX - elTimeline.offset().left;
 
                         setVisibleCommentsCount(Math.round(chronology.length * pos / elTimeline.width()));
-                        scrollToLastVisibleComment();
+                        scrollToLatestVisibleComment();
 
                         return false;
                     })
                 ).append(
-                    $('<A href="javascript:void(0)">+1</A>').attr('id', idChronologyMinus).click(function() {
+                    $('<A href="javascript:void(0)">+1</A>').attr('id', idChronologyPlus).click(function() {
                         setVisibleCommentsCount(visibleCommentsCount + 1);
-                        scrollToLastVisibleComment();
-                    })
+                        scrollToLatestVisibleComment();
+                    }).attr('title', 'История комментов: на один вперёд')
+                ).append(
+                    $('<A href="javascript:void(0)">▶</A>').attr('id', idChronologyPlay).click(function() {
+                        if (visibleCommentsCount < chronology.length) {
+                            // if there are comments to show
+                            setVisibleCommentsCount(chronology.length, true);
+                        }
+                        // if ther is not comments to show (button is "disabled") - behave like digits click anyway
+
+                        // like click on digits under the refresh button
+                        ls.comments.goToNextComment();
+                    }).attr('title', 'История комментов: к настоящему времени, подсветив все как новые')
                 )
             );
-            updateSliderPosition();
+            updateUI();
 
         });
     })();
@@ -652,7 +710,7 @@ if (config.unstyleVisitedNewComments) {
                 var elComment = $('#comment_id_'+this.aCommentNew[0]);
                 if (elComment.length){
                     this.scrollToComment(this.aCommentNew[0]);
-                    elComment.removeClass('comment-new');
+                    elComment.removeClass(ls.comments.options.classes.comment_new);
                 }
                 this.aCommentNew.shift();
             }
@@ -662,14 +720,14 @@ if (config.unstyleVisitedNewComments) {
 } else if (config.unstyleVisitedNewCommentsAfterUpdate) {
     (function() {
         ls.hook.add('ls_comments_load_after', function() {
-            $('.comment-new').each(function() {
+            $('.' + ls.comments.options.classes.comment_new).each(function() {
                 var elComment = $(this)
                   , id = elComment.attr('id').replace('comment_id_', '');
 
                 if (ls.comments.aCommentNew.indexOf(id) == -1 &&
                     ls.comments.aCommentNew.indexOf(parseInt(id)) == -1) {
 
-                        elComment.removeClass('comment-new');
+                        elComment.removeClass(ls.comments.options.classes.comment_new);
                 }
             });
         });
@@ -685,16 +743,53 @@ if (config.fixSameTopicCommentLinks) {
         var prefixes = [
                 'http://tabun.everypony.ru/comments/',
                 'http://tabun.everypony.ru' + window.location.pathname + '#comment',
+                'http://tabun.everypony.info/comments/',
+                'http://tabun.everypony.info' + window.location.pathname + '#comment',
+                'http://табун.всепони.рф/comments/',
+                'http://табун.всепони.рф' + window.location.pathname + '#comment',
                 '#comment'
             ]
           , selector = prefixes.map(function(p){return'A[href^="'+p+'"]'}).join(', ')
-          , clsSameTopicLink = 'tabun-fixes-same-topic-link';
+          , clsSameTopicLink = 'tabun-fixes-same-topic-link'
+          , elClickedLink = null
+          , elBackLink;
 
         $('<STYLE>').text(
             'A.' + clsSameTopicLink + ', ' +
             'A.' + clsSameTopicLink + ':hover, ' +
-            'A.' + clsSameTopicLink + ':visited { color: #0A0 } '
+            'A.' + clsSameTopicLink + ':visited { color: #0A0 !important } '
         ).appendTo(document.head);
+        
+        function addBackLink(idComment) {
+            elBackLink = $('<LI class="goto"><A href="#" title="Назад">←</A></LI>').on('click', function(ev){
+                elBackLink.remove();
+                scrollToElement(elClickedLink);
+                ev.stopImmediatePropagation();
+                return false;
+            });
+
+            elBackLink.insertAfter('#comment_id_' + idComment + ' > .comment-info .comment-link');
+        }
+        
+        function highlightComment(idComment) { // from ls.comments.scrollToComment
+            if (ls.comments.iCurrentViewComment) {
+                $('#comment_id_'+ls.comments.iCurrentViewComment).removeClass(ls.comments.options.classes.comment_current);
+            }				
+            $('#comment_id_'+idComment).addClass(ls.comments.options.classes.comment_current);
+            ls.comments.iCurrentViewComment=idComment;
+        }
+        
+        function scrollToElement(el) {
+            if (el == null) {
+                return;
+            }
+            var elComment = $(el).closest('.comment');
+            if (elComment.length) {
+                var id = parseInt(elComment.attr('id').replace('comment_id_', ''), 10);
+                highlightComment(id);
+            }
+            $.scrollTo(el, 300, {offset: -250});
+        }
 
         function sameTopicCommentId(href) {
             var res = null, commentId;
@@ -720,6 +815,10 @@ if (config.fixSameTopicCommentLinks) {
                 elCommentAnchor.attr('name', 'comment' + scrollableId);
                 // smooth scroll to the element
                 ls.comments.scrollToComment(scrollableId);
+                // remember what link was clicked and place back link
+                elClickedLink = this;
+                addBackLink(scrollableId);
+
                 ev.stopImmediatePropagation();
                 return false;
             }
@@ -846,7 +945,7 @@ if (config.altToTitle) {
                 var alt = this.getAttribute('alt')
                   , title = this.getAttribute('title');
 
-                if (!title) {
+                if (alt && !title) {
                     this.setAttribute('title', alt);
                 } else if (alt && title && alt != title) {
                     this.setAttribute('title', title + "(alt: " + alt + ")");
