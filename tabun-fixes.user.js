@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    9
+// @version    10
 // @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
@@ -49,6 +49,7 @@ var defaultConfig = {
     altToTitle: true,                 // 11   true/false   Копировать поле alt у картинок в поле title, чтобы при наведении появлялась подсказка
     alterMirrorsLinks: true,          // 12   true/false   Преобразовывать ссылки на другие зеркала табуна
     openInnerSpoilersWithShiftOrLongClick: true, // 13   true/false   Открывать вложенные спойлеры, если при нажатии на него был зажат шифт или клик был длинным (0.5 сек)
+    boostScrollToComment: true,       // 14   true/false   Ускорить scrollToComment (не выключается в графическом конфиге)
 }, config = defaultConfig;
 
 //
@@ -1068,5 +1069,24 @@ if (config.openInnerSpoilersWithShiftOrLongClick) {
         });
     })();
 }
+
+//
+// 14. Ускоренный scrollToComment (тормозит предыдущую анимацию, т.е. несколько быстрых кликов подряд не будут зависать)
+//
+if (config.boostScrollToComment) {
+    ls.comments.scrollToComment = function (idComment) {
+        if ($.fn._scrollable && $.fn.stop) {
+            $(window)._scrollable().stop();
+        }
+        $.scrollTo('#comment_id_'+idComment, 300, {offset: -250});
+                        
+        if (this.iCurrentViewComment) {
+            $('#comment_id_'+this.iCurrentViewComment).removeClass(this.options.classes.comment_current);
+        }				
+        $('#comment_id_'+idComment).addClass(this.options.classes.comment_current);
+        this.iCurrentViewComment=idComment;		
+    }
+}
+
 
 });
