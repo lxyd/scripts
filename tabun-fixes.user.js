@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    11
+// @version    12
 // @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
@@ -1089,17 +1089,12 @@ if (config.openInnerSpoilersWithShiftOrLongClick) {
 // 14. Ускоренный scrollToComment (тормозит предыдущую анимацию, т.е. несколько быстрых кликов подряд не будут зависать)
 //
 if (config.boostScrollToComment) {
+    var oldScrollToComments = ls.comments.scrollToComment;
     ls.comments.scrollToComment = function (idComment) {
         if ($.fn._scrollable && $.fn.stop) {
             $(window)._scrollable().stop();
         }
-        $.scrollTo('#comment_id_'+idComment, 300, {offset: -250});
-                        
-        if (this.iCurrentViewComment) {
-            $('#comment_id_'+this.iCurrentViewComment).removeClass(this.options.classes.comment_current);
-        }				
-        $('#comment_id_'+idComment).addClass(this.options.classes.comment_current);
-        this.iCurrentViewComment=idComment;		
+        oldScrollToComments.apply(this, arguments);
     }
 }
 
