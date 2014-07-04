@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    14
+// @version    15
 // @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js

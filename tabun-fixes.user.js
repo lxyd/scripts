@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    14
+// @version    15
 // @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
@@ -900,6 +900,10 @@ if (config.fixSameTopicCommentLinks) {
 //
 if (config.autoLoadInterval) {
     $(function() {
+        function getNow() {
+            return Date.now ? Date.now() : new Date().getTime();
+        }
+
         var period = Math.max(30, config.autoLoadInterval) * 1000
           , arr = /(?:^|\s)ls\.comments\.load\(([0-9]+),\s*'(topic|talk)'\)/.exec($('#update-comments').attr('onclick')) || []
           , topicId = arr[1]
@@ -932,7 +936,8 @@ if (config.autoLoadInterval) {
                 $(document).off(eventsToCatchInitialFocus, handler);
                 handleStateChange();
             });
-            
+
+            var longPressDone = false;
             var divContainer = $('<DIV>').css({
                     paddingTop: 2,
                     width: 25,
@@ -948,11 +953,19 @@ if (config.autoLoadInterval) {
                 }).on('mousedown', function() {
                     var longPressTimer = window.setTimeout(function() {
                         reloadWhenNotFocused = !reloadWhenNotFocused;
+                        longPressDone = true;
                         handleStateChange();
                     }, 1300);
                     $(document).on('mouseup', function mouseUp() {
                         window.clearTimeout(longPressTimer);
                         $(document).off('mouseup', mouseUp);
+
+                        if (longPressDone) {
+                            longPressDone = false;
+                            setTimeout(function() {
+                                elCheck.prop('checked', reloadWhenNotFocused);
+                            }, 0)
+                        }
                     })
                 }).appendTo(divContainer).prop('checked', enabled);
 
@@ -977,7 +990,6 @@ if (config.autoLoadInterval) {
             
             function timerFunc() {
                 if (!enabled || !focused && !reloadWhenNotFocused) {
-                    console.log('clearing');
                     needReloadingWhenFocused = enabled;
                     window.clearInterval(idInterval);
                     idInterval = null;
