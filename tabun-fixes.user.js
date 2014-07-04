@@ -260,7 +260,7 @@ if (config.guiConfig) {
                 position: 'fixed',
                 right: 6,
                 bottom: 30,
-                width: 450,
+                width: 900,
                 zIndex: 10000,
                 background: 'White',
                 border: "1px solid Silver",
@@ -273,9 +273,23 @@ if (config.guiConfig) {
                 textAlign: 'center',
                 marginBottom: 15
             }).appendTo(cfgUi);
+
+            var table = $('<TABLE>').css({
+                border: "none",
+                width: "100%"
+            }).appendTo(cfgUi);
+            var tr = $('<TR>').appendTo(table);
+            var tdCss = {
+                padding: '5px',
+                verticalAlign: 'top'
+            };
+            var td1 = $('<TD>').attr('width', "50%").css(tdCss).css('border-right', '1px solid #EEE').appendTo(tr);
+            var td2 = $('<TD>').attr('width', "50%").css(tdCss).appendTo(tr);
+
             // subconfigs
-            subConfigs.forEach(function(o) {
-                o.build($('<DIV>').css('marginBottom', 10).appendTo(cfgUi), config);
+            subConfigs.forEach(function(o, idx) {
+                var td = idx < subConfigs.length / 2 ? td1 : td2;
+                o.build($('<DIV>').css('marginBottom', 10).appendTo(td), config);
             });
             // Ok/Cancel
             $('<DIV>').appendTo(cfgUi).append(
