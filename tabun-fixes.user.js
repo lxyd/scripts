@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    12
+// @version    13
 // @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
@@ -52,6 +52,7 @@ var defaultConfig = {
     boostScrollToComment: true,       // 14   true/false   Ускорить scrollToComment (не выключается в графическом конфиге)
     liteSpoilersAlwaysOpen: false,    // 15   true/false   Светить буквами в лайт-спойлерах
     liteSpoilersOpenOnBlockHover: false, // 16 true/false  Открывать лайт-спойлеры по наведению на коммент/пост
+    spaceBarMovesToNext: false,       // 17   true/false   По пробелу переходить на следующий пост/непрочитанный коммент
 }, config = defaultConfig;
 
 //
@@ -135,6 +136,13 @@ if (config.guiConfig) {
                     $('<LABEL>').append(this.chk, "Открывать лайт-спойлеры по наведению на коммент/пост").appendTo(container);
                 },
                 getCfg: function() { return { liteSpoilersOpenOnBlockHover: this.chk.prop('checked') }; }
+            }
+          , { // 17. По пробелу переходить на следующий пост/непрочитанный коммент
+                build: function(container, cfg) {
+                    this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.spaceBarMovesToNext);
+                    $('<LABEL>').append(this.chk, "По пробелу переходить на следующий непрочитанный коммент").appendTo(container);
+                },
+                getCfg: function() { return { spaceBarMovesToNext: this.chk.prop('checked') }; }
             }
           , { // 4 Переформатирование дат
                 build: function(container, cfg) {
@@ -1089,12 +1097,12 @@ if (config.openInnerSpoilersWithShiftOrLongClick) {
 // 14. Ускоренный scrollToComment (тормозит предыдущую анимацию, т.е. несколько быстрых кликов подряд не будут зависать)
 //
 if (config.boostScrollToComment) {
-    var oldScrollToComments = ls.comments.scrollToComment;
+    ls.comments._old_scrollToComment = ls.comments.scrollToComment;
     ls.comments.scrollToComment = function (idComment) {
         if ($.fn._scrollable && $.fn.stop) {
             $(window)._scrollable().stop();
         }
-        oldScrollToComments.apply(this, arguments);
+        ls.comments._old_scrollToComment.apply(this, arguments);
     }
 }
 
@@ -1136,6 +1144,52 @@ if (config.liteSpoilersOpenOnBlockHover) {
             selectorHoverA + ' { background-color: transparent; color: #0099FF; } ' +
             selectorHoverAVisited + ' { background-color: transparent; color: #0099FF; } '
         ).appendTo(document.head);
+    })();
+}
+
+//
+// 17. По пробелу переходить на следующий пост/непрочитанный коммент
+//
+if (config.spaceBarMovesToNext) {
+    (function() {
+        function onSpaceBarPressed() {
+            if ($('#update-comments').length) { // we are on comments
+                if (ls.comments.aCommentNew.length > 0) {
+                    ls.comments.goToNextComment();
+                    return true;
+                } else {
+                    return false;
+                }
+            } else {
+                var article = null;
+                $('ARTICLE').each(function() {
+                    var el = $(this);
+                    if (el.offset().top > $(window).scrollTop() + 40 /*небольшой запас на случай микроскроллов, не очень заметных пользователю*/) {
+                        article = el;
+                        return false;
+                    }
+                });
+                if (article != null) {
+                    $.scrollTo(el, 300, {offset: -10});
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        $(document).on('keypress', function(ev) {
+            var el = ev.target;
+            if (el.tagName == 'INPUT' || el.tagName == 'SELECT' || el.tagName == 'TEXTAREA' || el.isContentEditable) {
+                // ignore input fields (as in https://github.com/ccampbell/mousetrap/blob/master/mousetrap.js)
+                return;
+            }
+            if (ev.key == ' ') {
+                if (onSpaceBarPressed()) {
+                    ev.preventDefault();
+                }
+            }
+        });
     })();
 }
 
