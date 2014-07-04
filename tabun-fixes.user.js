@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    16
+// @version    17
 // @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
@@ -972,6 +972,10 @@ if (config.autoLoadInterval) {
                             longPressDone = false;
                             setTimeout(function() {
                                 elCheck.prop('checked', reloadWhenNotFocused);
+                            }, 0)
+                            setTimeout(function() {
+                                enabled = elCheck.prop('checked');
+                                handleStateChange();
                             }, 0)
                         }
                     })
