@@ -1,10 +1,12 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    15
+// @version    16
 // @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
 // @downloadURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.user.js
+//
+// @grant none
 //
 // @include  http://tabun.everypony.ru/*
 // @match    http://tabun.everypony.ru/*
@@ -23,6 +25,10 @@
     document.body.removeChild(script); // clean up
 })(document, function(window, document, $) {
 
+var whatsNew =
+    '<strong>Что нового:</strong><br>'+
+    '• Lite-спойлеры теперь совместимы с темой <a href="http://userstyles.org/styles/92211/night-tabun">Night Tabun</a><br>'+
+    '• Можно использовать кнопку пробел для пробегания по новым комментариям или по постам в ленте (эту функцию нужно включить в настройках)';
 
 //
 // КОНФИГУРАЦИЯ
@@ -140,7 +146,7 @@ if (config.guiConfig) {
           , { // 17. По пробелу переходить на следующий пост/непрочитанный коммент
                 build: function(container, cfg) {
                     this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.spaceBarMovesToNext);
-                    $('<LABEL>').append(this.chk, "По пробелу переходить на следующий непрочитанный коммент").appendTo(container);
+                    $('<LABEL>').append(this.chk, "По пробелу переходить на следующий пост/непрочитанный коммент").appendTo(container);
                 },
                 getCfg: function() { return { spaceBarMovesToNext: this.chk.prop('checked') }; }
             }
@@ -288,9 +294,11 @@ if (config.guiConfig) {
 
             // subconfigs
             subConfigs.forEach(function(o, idx) {
-                var td = idx < subConfigs.length / 2 ? td1 : td2;
+                var td = idx < 8 ? td1 : td2;
                 o.build($('<DIV>').css('marginBottom', 10).appendTo(td), config);
             });
+            td2.append($('<DIV>').css('border-top', '1px solid #EEE').html(whatsNew));
+
             // Ok/Cancel
             $('<DIV>').appendTo(cfgUi).append(
                 $('<A>', { href: 'javascript:void(0)' }).text("ОК (обновите страницу, чтобы сработало)").on('click', function() {
