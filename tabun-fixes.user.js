@@ -1170,6 +1170,9 @@ if (config.spaceBarMovesToNext) {
                     }
                 });
                 if (article != null) {
+                    if ($.fn._scrollable && $.fn.stop) {
+                        $(window)._scrollable().stop();
+                    }
                     $.scrollTo(article, 300, {offset: -10});
                     return true;
                 } else {
