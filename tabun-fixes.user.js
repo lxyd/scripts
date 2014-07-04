@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    13
+// @version    14
 // @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
@@ -51,7 +51,7 @@ var defaultConfig = {
     openInnerSpoilersWithShiftOrLongClick: true, // 13   true/false   Открывать вложенные спойлеры, если при нажатии на него был зажат шифт или клик был длинным (0.5 сек)
     boostScrollToComment: true,       // 14   true/false   Ускорить scrollToComment (не выключается в графическом конфиге)
     liteSpoilersAlwaysOpen: false,    // 15   true/false   Светить буквами в лайт-спойлерах
-    liteSpoilersOpenOnBlockHover: false, // 16 true/false  Открывать лайт-спойлеры по наведению на коммент/пост
+    liteSpoilersOpenOnBlockHover: false, // 16 true/false  Приоткрывать лайт-спойлеры по наведению на коммент/пост
     spaceBarMovesToNext: false,       // 17   true/false   По пробелу переходить на следующий пост/непрочитанный коммент
 }, config = defaultConfig;
 
@@ -130,10 +130,10 @@ if (config.guiConfig) {
                 },
                 getCfg: function() { return { liteSpoilersAlwaysOpen: this.chk.prop('checked') }; }
             }
-          , { // 16. Открывать лайт-спойлеры по наведению на коммент/пост
+          , { // 16. Приоткрывать лайт-спойлеры по наведению на коммент/пост
                 build: function(container, cfg) {
                     this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.liteSpoilersOpenOnBlockHover);
-                    $('<LABEL>').append(this.chk, "Открывать лайт-спойлеры по наведению на коммент/пост").appendTo(container);
+                    $('<LABEL>').append(this.chk, "Приоткрывать лайт-спойлеры по наведению на коммент/пост").appendTo(container);
                 },
                 getCfg: function() { return { liteSpoilersOpenOnBlockHover: this.chk.prop('checked') }; }
             }
@@ -1120,44 +1120,66 @@ if (config.boostScrollToComment) {
     }
 }
 
-//
-// 15. Светить буквами в лайт-спойлерах
-//
-if (config.liteSpoilersAlwaysOpen) {
-    (function() {
-        $('<STYLE>').text(
-            '.spoiler-gray { background-color: #EEE; color: #999; } ' +
-            '.spoiler-gray:hover { background-color: transparent; color: #666; } ' +
-            '.spoiler-gray A, .spoiler-gray A:visited { color: #66AAFF; } ' +
-            '.spoiler-gray:hover A { background-color: transparent; color: #0099FF; } '
-        ).appendTo(document.head);
-    })();
-}
 
 //
-// 16. Открывать лайт-спойлеры по наведению на коммент/пост
+// 15. Светить буквами в лайт-спойлерах
+// 16. Приоткрывать лайт-спойлеры по наведению на коммент/пост
 //
-if (config.liteSpoilersOpenOnBlockHover) {
+if (config.liteSpoilersAlwaysOpen || config.liteSpoilersOpenOnBlockHover) {
     (function() {
+        // http://userstyles.org/styles/92211/night-tabun
+        var nightTabun = getComputedStyle($('<SPAN>').attr('class', 'spoiler-gray')[0]).backgroundColor == "rgb(63, 53, 61)"
+        // normal state
+        //var hiddenBgColor          = nightTabun ? '#3F353D' : '';
+        //var hiddenTextColor        = nightTabun ? '#3F353D' : '';
+        // always visible state
+        var transBgColor           = nightTabun ? '#2F252D' : '#EEE';
+        var transTextColor         = nightTabun ? '#8F8F8F' : '#999';
+        var transATextColor        = nightTabun ? '#7C89CA' : '#66AAFF';
+        var transAVisitedTextColor = nightTabun ? '#7C89CA' : '#66AAFF';
+        // hover state (fully visible)
+        var hoverTextColor         = nightTabun ? '#DFDFDF' : '#666';
+        var hoverATextColor        = nightTabun ? '#7C89CA' : '#0099FF';
+        var hoverAVisitedTextColor = nightTabun ? '#7C89CA' : '#0099FF';
+
         var containers = ['.comment', '.comment-preview', '.topic', '.profile-info-about']
-          , selectorSpoiler = containers.map(function(s) { return s + ':hover .spoiler-gray' }).join(', ')
-          , selectorA = containers.map(function(s) { return s + ':hover .spoiler-gray A' }).join(', ')
-          , selectorAVisited = containers.map(function(s) { return s + ':hover .spoiler-gray A:visited' }).join(', ')
+            // селекторы для спойлеров в обычном состоянии
+          , selectorSpoiler = containers.map(function(s) { return s + ' .spoiler-gray' }).join(', ')
+          , selectorA = containers.map(function(s) { return s + ' .spoiler-gray A' }).join(', ')
+          , selectorAVisited = containers.map(function(s) { return s + ' .spoiler-gray A:visited' }).join(', ')
+            // селекторы для наведённого коммента/поста
+          , selectorPostHoverSpoiler = containers.map(function(s) { return s + ':hover .spoiler-gray' }).join(', ')
+          , selectorPostHoverA = containers.map(function(s) { return s + ':hover .spoiler-gray A' }).join(', ')
+          , selectorPostHoverAVisited = containers.map(function(s) { return s + ':hover .spoiler-gray A:visited' }).join(', ')
             // и более специфичные селекторы для оригинального лайтспойлера в наведённом состоянии (иначе эти стили не пробиваются через наши)
           , selectorHoverSpoiler = containers.map(function(s) { return s + ':hover .spoiler-gray:hover' }).join(', ')
           , selectorHoverA = containers.map(function(s) { return s + ':hover .spoiler-gray:hover A' }).join(', ')
           , selectorHoverAVisited = containers.map(function(s) { return s + ':hover .spoiler-gray:hover A:visited' }).join(', ')
 
+        if (config.liteSpoilersAlwaysOpen) {
+            $('<STYLE>').text(
+                selectorSpoiler + ' { background-color: ' + transBgColor + ' !important; color: ' + transTextColor + ' !important; } ' +
+                selectorA + ' { color: ' + transATextColor + ' !important; } ' +
+                selectorAVisited + ' { color: ' + transAVisitedTextColor + ' !important; } ' +
+                // и более специфичные селекторы для оригинального лайтспойлера в наведённом состоянии (иначе эти стили не пробиваются через наши)
+                selectorHoverSpoiler + ' { background-color: transparent !important; color: ' + hoverTextColor + ' !important; } ' +
+                selectorHoverA + ' { background-color: transparent !important; color: ' + hoverATextColor + ' !important; } ' +
+                selectorHoverAVisited + ' { background-color: transparent !important; color: ' + hoverAVisitedTextColor + ' !important; } '
+            ).appendTo(document.head);
+        }
+            
+        if (config.liteSpoilersOpenOnBlockHover) {
+            $('<STYLE>').text(
+                selectorPostHoverSpoiler + ' { background-color: ' + transBgColor + ' !important; color: ' + transTextColor + ' !important; } ' +
+                selectorPostHoverA + ' { color: ' + transATextColor + ' !important; } ' +
+                selectorPostHoverAVisited + ' { color: ' + transAVisitedTextColor + ' !important; } ' +
+                // и более специфичные селекторы для оригинального лайтспойлера в наведённом состоянии (иначе эти стили не пробиваются через наши)
+                selectorHoverSpoiler + ' { background-color: transparent !important; color: ' + hoverTextColor + ' !important; } ' +
+                selectorHoverA + ' { background-color: transparent !important; color: ' + hoverATextColor + ' !important; } ' +
+                selectorHoverAVisited + ' { background-color: transparent !important; color: ' + hoverAVisitedTextColor + ' !important; } '
+            ).appendTo(document.head);
+        }
 
-        $('<STYLE>').text(
-            selectorSpoiler + ' { background-color: #EEE; color: #999; } ' +
-            selectorA + ' { color: #66AAFF; } ' +
-            selectorAVisited + ' { color: #66AAFF; } ' +
-            // и более специфичные селекторы для оригинального лайтспойлера в наведённом состоянии (иначе эти стили не пробиваются через наши)
-            selectorHoverSpoiler + ' { background-color: transparent; color: #666; } ' +
-            selectorHoverA + ' { background-color: transparent; color: #0099FF; } ' +
-            selectorHoverAVisited + ' { background-color: transparent; color: #0099FF; } '
-        ).appendTo(document.head);
     })();
 }
 
