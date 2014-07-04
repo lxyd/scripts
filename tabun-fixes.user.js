@@ -1170,7 +1170,7 @@ if (config.spaceBarMovesToNext) {
                     }
                 });
                 if (article != null) {
-                    $.scrollTo(el, 300, {offset: -10});
+                    $.scrollTo(article, 300, {offset: -10});
                     return true;
                 } else {
                     return false;
