@@ -27,7 +27,7 @@
 
 var whatsNew =
     '<strong>Что нового:</strong><br>'+
-    '• Можно отображать количество непрочитанных комментов в иконке сайта<br>'+
+    '• Количество непрочитанных комментов теперь отображается в иконке сайта<br>'+
     '• Lite-спойлеры теперь совместимы с темой <a href="http://userstyles.org/styles/92211/night-tabun">Night Tabun</a><br>'+
     '• Можно использовать кнопку пробел для пробегания по новым комментариям или по постам в ленте (эту функцию нужно включить в настройках)';
 
@@ -60,7 +60,7 @@ var defaultConfig = {
     liteSpoilersAlwaysOpen: false,    // 15   true/false   Светить буквами в лайт-спойлерах
     liteSpoilersOpenOnBlockHover: false, // 16 true/false  Приоткрывать лайт-спойлеры по наведению на коммент/пост
     spaceBarMovesToNext: false,       // 17   true/false   По пробелу переходить на следующий пост/непрочитанный коммент
-    countUnreadInFavicon: false,      // 18   true/false   Показывать кол-во непрочитанный комментов в favicon'е
+    countUnreadInFavicon: true,       // 18   true/false   Показывать кол-во непрочитанный комментов в favicon'е
 }, config = defaultConfig;
 
 //
@@ -182,7 +182,7 @@ if (config.guiConfig) {
           , { // 18. Показывать количество непрочитанных в иконке favicon
                 build: function(container, cfg) {
                     this.chk = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.countUnreadInFavicon);
-                    $('<LABEL>').append(this.chk, "Показывать количество непрочитанных в иконке сайта").appendTo(container);
+                    $('<LABEL>').append(this.chk, "Показывать количество непрочитанных комментов в иконке сайта").appendTo(container);
                 },
                 getCfg: function() { return { countUnreadInFavicon: this.chk.prop('checked') }; }
             }
