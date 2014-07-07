@@ -1259,7 +1259,7 @@ if (config.spaceBarMovesToNext) {
                 // ignore input fields (as in https://github.com/ccampbell/mousetrap/blob/master/mousetrap.js)
                 return;
             }
-            if (ev.key == ' ') {
+            if (ev.which == 32 /*SPACE*/) {
                 if (onSpaceBarPressed()) {
                     ev.preventDefault();
                 }
