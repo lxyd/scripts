@@ -607,7 +607,7 @@ if ($('#comments').length && config.addHistoryTimeline) {
             visibleCommentsCount = cnt;
 
             if (highlightNewlyAppeared) {
-                if (ls.comments.aNewComment) {
+                if (ls.comments.aCommentNew) {
                     ls.comments.aCommentNew.length = 0;
                 }
                 ls.comments.calcNewComments();
@@ -700,6 +700,9 @@ if ($('#comments').length && config.addHistoryTimeline) {
                     $('<A href="javascript:void(0)">▶</A>').attr('id', idChronologyPlay).click(function() {
                         if (visibleCommentsCount < chronology.length) {
                             // if there are comments to show
+                            // unhighlight all the comments
+                            $('.' + ls.comments.options.classes.comment_new).removeClass(ls.comments.options.classes.comment_new);
+                            // and highlight newly shown
                             setVisibleCommentsCount(chronology.length, true);
                         }
                         // if ther is not comments to show (button is "disabled") - behave like digits click anyway
@@ -1298,8 +1301,6 @@ if (config.countUnreadInFavicon) {
             }
         }
 
-        console.log("Fonts: " + fontSizeNormal + ", " + fontSize100 + ", " + fontSizeMoreThan100);
-
         
         function drawCnt(cntString, fontSize) {
             ctx.font = setFont(fontSize);
@@ -1308,7 +1309,6 @@ if (config.countUnreadInFavicon) {
         }
 
         function updateFavicon() {
-            console.log("updateFavicon " + curCnt);
             ctx.clearRect(0, 0, dimen, dimen);
             if (favicon.width > 0 && favicon.height > 0) {
                 // draw favicon
