@@ -1,5 +1,20 @@
 #!/usr/bin/env bash
 
+ADDRESS_LIST_URL="https://github.com/zapret-info/z-i/raw/master/dump.csv"
+
+SQUID_LOGIN=user
+SQUID_PASSWORD=
+SQUID_PORT=3128
+SERVER_ADDRESS="$(echo $(hostname --ip-address))" # echo is for trimming
+SQUID_REALM="Proxy$RANDOM"
+
+# path to additional configuration file
+# it can contain:
+# |  #comments
+# |  /^regular.expressions$/ to match host or url
+# |  or.exact.hostnam.es     to match host, url or ip
+PROXY_HOSTS_LIST_FILE="/etc/proxy_hosts"
+
 function print_lines() {
     local A
     for A in "$@"; do
@@ -58,13 +73,6 @@ function read_password() {
     echo "$PASSWORD_ENTERED"
 }
 
-function get_first_ip_addr() {
-    #ip addr show scope global | grep 'inet .* scope global' | sed 's/^.*inet\s\([0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\)[/].*$/\1/' | head -n 1
-
-    # echo is here for trimming purposes
-    echo $(hostname --ip-address)
-}
-
 # rough analogue of the htdigest utility
 function htdigest_analogue() {
     local FILE="$1"
@@ -89,16 +97,6 @@ function htdigest_analogue() {
 
     rm "$TMP"
 }
-
-ADDRESS_LIST_URL="https://github.com/zapret-info/z-i/raw/master/dump.csv"
-
-SQUID_LOGIN=user
-SQUID_PASSWORD=
-SQUID_PORT=3128
-SERVER_ADDRESS="$(get_first_ip_addr)"
-SQUID_REALM="Proxy$RANDOM"
-
-PROXY_HOSTS_LIST_FILE="/etc/proxy_hosts"
 
 function print_help() {
     print_lines "USAGE: $0 [options]" \
@@ -263,14 +261,26 @@ cat > "$PAC_FILE" <<E_O_F
 // PAC-ip File (similar to ProstoVPN.AntiZapret's one)
 // Generated on $(date)
 
-function FindProxyForURL(url, host) {
-  return [ 
+// subject to match url or host
+var regexps = [
 E_O_F
 
-sed 's/^\(.*\)$/    "\1",/' "$PROXY_HOSTS_LIST_FILE" >> "$PAC_FILE"
+grep '^/' "$PROXY_HOSTS_LIST_FILE" | sed 's/^\(.*\)$/    \1,/' >> "$PAC_FILE"
 
 cat >> "$PAC_FILE" << E_O_F
-  ].indexOf(host) == -1 && [
+];
+
+// subject to exactly match url, host or ip
+var hosts = [
+E_O_F
+
+grep -v '^#\|^$\|^/' "$PROXY_HOSTS_LIST_FILE" | sed 's/^\(.*\)$/    "\1",/' >> "$PAC_FILE"
+
+cat >> "$PAC_FILE" << E_O_F
+];
+
+// subject to exactly match ip
+var ips = [
 E_O_F
 
 # skip first line, than extract first field from each
@@ -278,7 +288,33 @@ E_O_F
 tail -n +2 "$LIST_FILE" | cut -d ';' -f 1 | tr '|' $"\n" | tr -d ' ' | sort | uniq | sed 's/^\(.*\)$/    "\1",/' >> "$PAC_FILE"
 
 cat >> "$PAC_FILE" <<E_O_F
-  ].indexOf(dnsResolve(host)) == -1 ? "DIRECT" : "PROXY $PROXY_URL; DIRECT";
+];
+
+var result_proxy = "PROXY $PROXY_URL; DIRECT"
+  , result_direct = "DIRECT";
+
+function FindProxyForURL(url, host) {
+    if (hosts.indexOf(host) >= 0 || hosts.indexOf(url) >= 0) {
+        return result_proxy;
+    }
+
+    for (var i = 0; i < regexps.length; i++) {
+        if (regexps[i].test(host) || regexps[i].test(url)) {
+            return result_proxy;
+        }
+    }
+
+    var ip = dnsResolve(host);
+
+    if (hosts.indexOf(ip)) {
+        return result_proxy;
+    }
+
+    if (ips.indexOf(ip) >= 0) {
+        return result_proxy;
+    }
+
+    return result_direct;
 }
 E_O_F
 
