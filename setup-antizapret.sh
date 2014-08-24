@@ -274,7 +274,7 @@ cat >> "$PAC_FILE" << E_O_F
 var hosts = [
 E_O_F
 
-grep -v '^#\|^$\|^/' "$PROXY_HOSTS_LIST_FILE" | sed 's/^\(.*\)$/    "\1",/' >> "$PAC_FILE"
+grep -v '^#\|^$\|^/' "$PROXY_HOSTS_LIST_FILE" | sort | sed 's/^\(.*\)$/    "\1",/' >> "$PAC_FILE"
 
 cat >> "$PAC_FILE" << E_O_F
 ];
@@ -290,11 +290,24 @@ tail -n +2 "$LIST_FILE" | cut -d ';' -f 1 | tr '|' $"\n" | tr -d ' ' | sort | un
 cat >> "$PAC_FILE" <<E_O_F
 ];
 
+function diho_search(arr, val) {
+    var a = 0, b = arr.length - 1;
+    while (b > a) {
+        var i = Math.floor((b+a) / 2);
+        if (arr[i] < val) {
+            a = i+1;
+        } else {
+            b = i;
+        }
+    }
+    return arr[a] == val ? a : -1;
+}
+
 var result_proxy = "PROXY $PROXY_URL; DIRECT"
   , result_direct = "DIRECT";
 
 function FindProxyForURL(url, host) {
-    if (hosts.indexOf(host) >= 0 || hosts.indexOf(url) >= 0) {
+    if (diho_search(hosts, host) >= 0 || diho_search(hosts, url) >= 0) {
         return result_proxy;
     }
 
@@ -306,11 +319,11 @@ function FindProxyForURL(url, host) {
 
     var ip = dnsResolve(host);
 
-    if (hosts.indexOf(ip)) {
+    if (diho_search(hosts, ip) >= 0) {
         return result_proxy;
     }
 
-    if (ips.indexOf(ip) >= 0) {
+    if (diho_search(ips, ip) >= 0) {
         return result_proxy;
     }
 
