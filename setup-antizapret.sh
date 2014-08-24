@@ -255,7 +255,7 @@ function quit() {
 
 trap clean_up SIGHUP SIGINT SIGTERM
 
-wget "$ADDRESS_LIST_URL" --output-document - > "$LIST_FILE" || quit 1 "Error downloading list"
+wget "$ADDRESS_LIST_URL" --no-check-certificate --output-document - > "$LIST_FILE" || quit 1 "Error downloading list"
 
 cat > "$PAC_FILE" <<E_O_F
 // PAC-ip File (similar to ProstoVPN.AntiZapret's one)
