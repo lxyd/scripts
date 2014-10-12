@@ -1,3 +1,2 @@
 #!/usr/bin/env bash
-
-mount -itvfat -otime_offset=$((`date +%:z|sed 's/\([+-]\)0\?\(.*\):0\?/\1\2*60\1/'`)) "$@"
+mount -itvfat -oiocharset=utf8,time_offset=$((`date +%:z|sed 's/\([+-]\)0\?\(.*\):0\?/\1\2*60\1/'`)) "$@"
