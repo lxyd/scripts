@@ -1,16 +1,3 @@
 #!/usr/bin/env bash
 
-function remove_leading_zeros() {
-    echo "$1" | sed 's/^0*\(.\)/\1/'
-}
-
-function tz_offset_minutes() {
-    local TZ_OFFSET="$(date '+%z')"
-    local SIGN=${TZ_OFFSET:0:1}
-    local H=$(remove_leading_zeros ${TZ_OFFSET:1:2})
-    local M=$(remove_leading_zeros ${TZ_OFFSET:3:2})
-
-    echo $(( $SIGN$(( $H*60 + $M )) ))
-}
-
-mount -i -t vfat -o iocharset=utf8,time_offset=$(tz_offset_minutes) "$@"
+mount -itvfat -otime_offset=$((`date +%:z|sed 's/\([+-]\)0\?\(.*\):0\?/\1\2*60\1/'`)) "$@"
