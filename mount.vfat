@@ -1,2 +1,52 @@
 #!/usr/bin/env bash
-mount -itvfat -oiocharset=utf8,time_offset=$((`date +%:z|sed -r 's/(.)0?(.*):0?/\1\2*60\1/'`)) "$@"
+
+OPTS=(
+    "time_offset" "$((`date +%:z|sed -r 's/(.)0?(.*):0?/\1\2*60\1/'`))"
+    "iocharset"   "utf8"
+)
+
+function _build_opts() {
+    local RES="$1"
+    local I
+    local PROP
+    local VAL
+
+    for (( I=0; I<${#OPTS[@]}; I=I+2 )); do
+        PROP="${OPTS[I]}"
+        VAL="${OPTS[I+1]}"
+        if [[ -z "$RES" ]]; then
+            RES="$PROP=$VAL"
+        elif [[ ! "$RES" =~ $PROP= ]]; then
+            RES="$RES,$PROP=$VAL"
+        fi
+    done
+
+    echo "$RES"
+}
+
+ARGS=("$@")
+CNT=${#ARGS[@]}
+APPEND_IDX=-1
+for (( I=0; I<$CNT; I++)); do
+    if [[ "${ARGS[I]}" =~ ^-[^tOo]*o.+$ ]]; then
+        # bunch of options ending with -oopti=ons: -aoiocharset=utf8
+        APPEND_IDX=$I
+    elif [[ "${ARGS[I]}" =~ ^-[^tOo]*o$ ]]; then
+        # options are separated: -ao opti=ons
+        APPEND_IDX=$((I+1))
+    elif [[ "${ARGS[I]}" =~ ^-[^tOo]*[tO]$ ]]; then
+        # skip next option
+        I=$((I+1))
+    fi
+done
+
+if (( APPEND_IDX == -1 )); then
+    ARGS[$CNT]="-o$(_build_opts)"
+elif (( APPEND_IDX == CNT )); then
+    # rare case: empty -o was the last option
+    ARGS[$CNT]="$(_build_opts)"
+else
+    ARGS[$APPEND_IDX]="$(_build_opts ${ARGS[$APPEND_IDX]})"
+fi
+
+mount -itvfat "${ARGS[@]}"
