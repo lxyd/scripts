@@ -16,7 +16,7 @@ function _build_opts() {
         VAL="${OPTS[I+1]}"
         if [[ -z "$RES" ]]; then
             RES="$PROP=$VAL"
-        elif [[ ! "$RES" =~ $PROP= ]]; then
+        elif [[ ! "$RES" =~ (^|^-[^tOo]*o|,)$PROP= ]]; then
             RES="$RES,$PROP=$VAL"
         fi
     done
@@ -31,9 +31,11 @@ for (( I=0; I<$CNT; I++)); do
     if [[ "${ARGS[I]}" =~ ^-[^tOo]*o.+$ ]]; then
         # bunch of options ending with -oopti=ons: -aoiocharset=utf8
         APPEND_IDX=$I
+        break
     elif [[ "${ARGS[I]}" =~ ^-[^tOo]*o$ ]]; then
         # options are separated: -ao opti=ons
         APPEND_IDX=$((I+1))
+        break
     elif [[ "${ARGS[I]}" =~ ^-[^tOo]*[tO]$ ]]; then
         # skip next option
         I=$((I+1))
