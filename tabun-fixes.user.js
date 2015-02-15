@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    20
+// @version    21
 // @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
@@ -1395,10 +1395,12 @@ if (config.autospoilerImages) {
         var reGif = /\.gif$/i
         function process(elements) {
             elements.find('IMG').each(function(_, e) {
-                if (e.width > 0 && e.height > 0) {
+                // HACK: XXX: 40 px is arbitrary non-loaded image width
+                // TODO: implement more reliable way to determine not loaded image
+                if (e.width > 40 && e.height > 40) {
                     processImage(e)
                 } else {
-                    e.setEventListener('load', onImageLoad())
+                    e.addEventListener('load', onImageLoad)
                 }
             })
         }
