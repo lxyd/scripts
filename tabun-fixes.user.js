@@ -515,7 +515,8 @@ if (config.changeDateFormat || config.localTime || config.relativeTime) {
 
         function process(elements) {
             $(elements).each(function() {
-                var dt = this.getAttribute('datetime')
+                var timestamp = this.getAttribute('datetime')
+                  , dt = timestamp;
 
                 if (config.changeDateFormat || config.localTime) {
                     dt = reformatDateTime(dt, config.changeDateFormat || defaultDateFormat, config.localTime);
@@ -525,6 +526,7 @@ if (config.changeDateFormat || config.localTime || config.relativeTime) {
                     this.setAttribute('title', dt);
                 } else {
                     this.innerHTML = dt;
+                    this.setAttribute('title', timestamp);
                 }
             }).addClass(clsProcessed);
         }
