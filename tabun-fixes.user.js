@@ -1394,7 +1394,7 @@ if (config.autospoilerImages) {
     (function() {
         var reGif = /\.gif$/i
         function process(elements) {
-            elements.find('IMG').each(function(_, e) {
+            elements.find('IMG').not('.spoiler IMG').each(function(_, e) {
                 // HACK: XXX: 40 px is arbitrary non-loaded image width
                 // TODO: implement more reliable way to determine not loaded image
                 if (e.width > 40 && e.height > 40) {
