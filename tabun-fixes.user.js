@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    19
+// @version    20
 // @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
@@ -27,9 +27,7 @@
 
 var whatsNew =
     '<strong>Что нового:</strong><br>'+
-    '• Количество непрочитанных комментов теперь отображается в иконке сайта<br>'+
-    '• Lite-спойлеры теперь совместимы с темой <a href="http://userstyles.org/styles/92211/night-tabun">Night Tabun</a><br>'+
-    '• Можно использовать кнопку пробел для пробегания по новым комментариям или по постам в ленте (эту функцию нужно включить в настройках)';
+    '• Авто-спойлер для картинок большого размера в комментариях (эту функцию нужно включить в настройках)'
 
 //
 // КОНФИГУРАЦИЯ
@@ -50,7 +48,7 @@ var defaultConfig = {
     moveTopicAuthorToBottom: false,   // 7    true/false   В топиках переместить автора вниз
     unstyleVisitedNewCommentsAfterUpdate: true,  // 8    true/false   Убирать зелёную подсветку с комментов после автообновления при отправке коммента (нет аналога в гуёвом конфиге)
     unstyleVisitedNewComments: false,  // 8.b    true/false   Убирать зелёную подсветку с комментов сразу после прочтения
-    fixSameTopicCommentLinks: true,   // 9    true/false   При клике на ссылки вида http://tabun.everypony.ru/comments/<id> скроллить на коммент "#<id>", если он находится в этом же топике
+    fixSameTopicCommentLinks: true,   // 9    true/false   При клике на ссылки вида http://tabun.everypony.ru/comments/<id> скроллить на коммент "#<id>", если он находится в этом же топике        
     autoLoadInterval: 30,             // 10.a Целое число  Если не false и не 0, добавляет галочку для автоподгрузки добавленных комментов (минимальный интервал - 30)
     autoLoadCheckedByDefault: false,  // 10.b true/false   Стоит ли эта галочка по умолчанию
     altToTitle: true,                 // 11   true/false   Копировать поле alt у картинок в поле title, чтобы при наведении появлялась подсказка
@@ -61,7 +59,22 @@ var defaultConfig = {
     liteSpoilersOpenOnBlockHover: false, // 16 true/false  Приоткрывать лайт-спойлеры по наведению на коммент/пост
     spaceBarMovesToNext: false,       // 17   true/false   По пробелу переходить на следующий пост/непрочитанный коммент
     countUnreadInFavicon: true,       // 18   true/false   Показывать кол-во непрочитанный комментов в favicon'е
+    autospoilerImages: false,         // 19   true/false   Скрывать картинки большого размера
+    autospoilerImagesWidth: 1000,     // 19.a Целое число  Ширина, начиная с которой картинка должна быть заспойлерена
+    autospoilerImagesHeight: 450,     // 19.b Целое число  Высота, начиная с которой картинка должна быть заспойлерена
+    autospoilerImagesGif: false,      // 19.c true/false   Автоскрывать ВСЕ gif'ки (опция отключена до лучших времён)
 }, config = defaultConfig;
+
+// Show "what's new" alert
+(function() {
+    var lsKey = "tabun-fixes-whatsnew"
+      , prevWhatsNew = window.localStorage.getItem(lsKey) || "";
+
+    window.localStorage.setItem(lsKey, whatsNew);
+    if (prevWhatsNew != whatsNew) {
+        alert("Юзерскрипт tabun-fixes обновился!\n" + $("<P>").html(whatsNew.replace(/\<br\/?\>/g, "\n")).text());
+    }
+})();
 
 //
 // 0. Графический конфигуратор
@@ -195,7 +208,7 @@ if (config.guiConfig) {
                     container.append(
                         $('<LABEL>').append(this.chkEnable, "Уменьшить длину лесенки комментов до "),
                         this.txtLen,
-                        " (целое число меньше " + ls.registry.get('comment_max_tree') + ")"
+                        " (число меньше " + ls.registry.get('comment_max_tree') + ")"
                     );
                 },
                 getCfg: function() {
@@ -250,6 +263,31 @@ if (config.guiConfig) {
                     $('<LABEL>').append(this.chk, "Показывать атрибуты alt картинок в виде всплывающих подсказок").appendTo(container);
                 },
                 getCfg: function() { return { altToTitle: this.chk.prop('checked') }; }
+            }
+          , { // 19. Автоспойлерить большие картинки
+                build: function(container, cfg) {
+                    this.txtWidth = $('<INPUT>', { type: 'text' }).css('width', 30).val(cfg.autospoilerImagesWidth || "").prop('disabled', !cfg.autospoilerImages);
+                    this.txtHeight = $('<INPUT>', { type: 'text' }).css('width', 30).val(cfg.autospoilerImagesHeight || "").prop('disabled', !cfg.autospoilerImages);
+                    this.chkGif = $('<INPUT>', { type: 'checkbox' }).prop('checked', !!cfg.autospoilerImagesGif).prop('disabled', !cfg.autospoilerImages);
+                    this.chkEnable = $('<INPUT>', { type: 'checkbox' }).on('change', function() {
+                        this.txtWidth.prop('disabled', !this.chkEnable.prop('checked'));
+                        this.txtHeight.prop('disabled', !this.chkEnable.prop('checked'));
+                        this.chkGif.prop('disabled', !this.chkEnable.prop('checked'));
+                    }.bind(this)).prop('checked', !!cfg.autospoilerImages);
+                    container.append(
+                        $('<LABEL>').append(this.chkEnable, "Скрывать в комментах картинки "),
+                        "больше ", this.txtWidth, "px шириной или больше ", this.txtHeight, "px высотой "
+                        //, $('<LABEL>').append(this.chkGif, "и любые GIF'ы") // TODO: discover reliable way to determine gifs and uncomment
+                    );
+                },
+                getCfg: function() {
+                    return { 
+                        autospoilerImages: this.chkEnable.prop('checked'),
+                        autospoilerImagesGif: this.chkGif.prop('checked'),
+                        autospoilerImagesWidth: parseInt(this.txtWidth.val(), 10),
+                        autospoilerImagesHeight: parseInt(this.txtHeight.val(), 10),
+                    }
+                }
             }
         );
 
@@ -396,7 +434,7 @@ if (config.showFavoriteAsIco) {
 
         // Комменты, подгруженные динамически
         ls.hook.add('ls_comment_inject_after', function() {
-            process('.comment-info .favourite', this);
+            process($('.comment-info .favourite', this));
         });
 
         // Посты, подгруженные с помощью кнопки "получить ещё посты"
@@ -1344,6 +1382,64 @@ if (config.countUnreadInFavicon) {
             curCnt = cnt;
             updateFavicon();
         }
+    })();
+}
+
+//
+// 19. Autospoiler big images
+//
+if (config.autospoilerImages) {
+    (function() {
+        var reGif = /\.gif$/i
+        function process(elements) {
+            elements.find('IMG').each(function(_, e) {
+                if (e.width > 0 && e.height > 0) {
+                    processImage(e)
+                } else {
+                    e.setEventListener('load', onImageLoad())
+                }
+            })
+        }
+
+        function processImage(e) {
+                if (config.autospoilerImagesGif && reGif.test(e.src)) {
+                    spoiler(e, 'gif')
+                } else if (e.width > config.autospoilerImagesWidth) {
+                    spoiler(e, 'ширина ' + e.width)
+                } else if (e.height > config.autospoilerImagesHeight) {
+                    spoiler(e, 'высота ' + e.height)
+                }
+        }
+
+        function onImageLoad() {
+            processImage(this)
+        }
+
+        function spoiler(img, reason) {
+            var spoilerBody;
+            $(img).after(
+                $('<SPAN>')
+                    .attr('class', 'spoiler')
+                    .append(
+                        $('<SPAN>')
+                            .attr('class', 'spoiler-title')
+                            .attr('onclick', 'return true;')
+                            .text('[КАРТИНКА (' + reason + ')]'),
+                        spoilerBody = $('<SPAN>')
+                            .attr('class', 'spoiler-body')
+                            .attr('style', 'display: none;')
+                    )
+            );
+            spoilerBody.append(img)
+        }
+
+        $(function() {
+            process($('.comment-content .text'));
+        });
+
+        ls.hook.add('ls_comment_inject_after', function() {
+            process($('.comment-content .text', this));
+        });
     })();
 }
 
