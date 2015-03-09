@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    21
-// @description    Автообновление комментов, возможность выбрать формат дат, использовать локальное время вместо московского, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
+// @version    22
+// @description    Автообновление комментов, возможность выбрать формат дат, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
 // @downloadURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.user.js
@@ -41,7 +41,6 @@ var defaultConfig = {
     hideHideButton: true,             // 2    true/false   Показывать кнопку "Скрыть" только при наведении
     showFavoriteAsIco: true,          // 3    true/false   Заменить "В избранное" на звёздочку
     changeDateFormat: false,          // 4.a  Строка       Если надо, впишите сюда формат, например, 'dd.MM.yyyy HH:mm', если нет - false
-    localTime: false,                 // 4.b  true/false   Показывать локальное время вместо московского
     relativeTime: false,              // 4.c  true/false   Для тех, кто соскучился по времени в духе "только что" и "5 минут назад"
     addHistoryTimeline: true,         // 5    true/false   Добавить скроллер по истории появления комментариев
     scrollCommentsByNumber: false,    // 6    true/false   Скроллить комментарии не сверху вниз, а по порядку добавления
@@ -171,7 +170,6 @@ if (config.guiConfig) {
                     this.chkReformat = $('<INPUT>', { type: 'checkbox' }).on('change', function() {
                         this.txtFormat.prop('disabled', !this.chkReformat.prop('checked'));
                     }.bind(this)).prop('checked', !!cfg.changeDateFormat);
-                    this.chkLocal = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.localTime);
                     this.chkRelative = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.relativeTime);
                     container.append(
                         $('<LABEL>').append(this.chkReformat, "Сменить формат дат "),
@@ -180,14 +178,12 @@ if (config.guiConfig) {
                         "yyyy, yy - год (2013 или 13)<BR/>" +
                         "MMMM, MMM, MM, M - месяц (февраля, фев, 02, 2)<BR/>" +
                         "dd, d - день, HH, H - часы, mm, m - минуты, ss, s - секунды (09 или 9)</P>",
-                        $('<LABEL>').append(this.chkLocal, "Отображать локальное время вместо московского"), "<BR/>",
                         $('<LABEL>').append(this.chkRelative, "Отображать время в виде \"5 минут назад\"")
                     );
                 },
                 getCfg: function() {
                     return { 
                         changeDateFormat: this.chkReformat.prop('checked') ? this.txtFormat.val() : false,
-                        localTime: this.chkLocal.prop('checked'),
                         relativeTime: this.chkRelative.prop('checked')
                     }
                 }
@@ -448,7 +444,7 @@ if (config.showFavoriteAsIco) {
 //
 // 4. Форматирование дат
 //
-if (config.changeDateFormat || config.localTime || config.relativeTime) {
+if (config.changeDateFormat || config.relativeTime) {
     (function() {
         /**
          * Переформатирует дату/время, представленную в виде строки isoDateTime, например 2013-02-06T23:01:33+04:00
@@ -518,8 +514,8 @@ if (config.changeDateFormat || config.localTime || config.relativeTime) {
                 var timestamp = this.getAttribute('datetime')
                   , dt = timestamp;
 
-                if (config.changeDateFormat || config.localTime) {
-                    dt = reformatDateTime(dt, config.changeDateFormat || defaultDateFormat, config.localTime);
+                if (config.changeDateFormat) {
+                    dt = reformatDateTime(dt, config.changeDateFormat || defaultDateFormat, false);
                 }
                 if (config.relativeTime) {
                     this.innerHTML = this.getAttribute('title');
@@ -964,10 +960,36 @@ if (config.autoLoadInterval) {
             return Date.now ? Date.now() : new Date().getTime();
         }
 
+        var lockElement = $('<DIV>').css({
+            zIndex: 1000000,
+            position: 'fixed',
+            top: '0px', left: '0px',
+            width: '100%', height: '100%'
+        })
+
+
+        function lockScreen() {
+            lockElement.prependTo(document.body)
+        }
+
+        function unlockScreen() {
+            lockElement.remove()
+        }
+
+        ls.hook.add('ls_comments_load_after', function() {
+            if (needLockScreen) {
+                lockScreen();
+                setTimeout(unlockScreen, 1000);
+                needLockScreen = false
+            }
+            // TODO adjust timer
+        })
+
         var period = Math.max(30, config.autoLoadInterval) * 1000
           , arr = /(?:^|\s)ls\.comments\.load\(([0-9]+),\s*'(topic|talk)'\)/.exec($('#update-comments').attr('onclick')) || []
           , topicId = arr[1]
           , type = arr[2]
+          , needLockScreen = false
 
         if (topicId != null && type != null) {
 
@@ -978,6 +1000,7 @@ if (config.autoLoadInterval) {
               , needReloadingWhenFocused = false
               , idInterval = null
               , updateComments = function() {
+                    needLockScreen = true;
                     ls.comments.load(topicId, type, undefined, true);
                 }
 
@@ -1400,23 +1423,33 @@ if (config.autospoilerImages) {
                 if (e.width > 40 && e.height > 40) {
                     processImage(e)
                 } else {
-                    e.addEventListener('load', onImageLoad)
+                    // either wait for full load
+                    // or just let the img element find out the image's size
+                    waitForImage(e);
                 }
             })
         }
 
-        function processImage(e) {
-                if (config.autospoilerImagesGif && reGif.test(e.src)) {
-                    spoiler(e, 'gif')
-                } else if (e.width > config.autospoilerImagesWidth) {
-                    spoiler(e, 'ширина ' + e.width)
-                } else if (e.height > config.autospoilerImagesHeight) {
-                    spoiler(e, 'высота ' + e.height)
-                }
+        function waitForImage(e) {
+            var timeout = setTimeout(function() {
+                    processImage(e)
+                }, 1000)
+              , loadListener = function() {
+                    clearTimeout(timeout);
+                    processImage(e)
+                };
+
+            e.addEventListener('load', loadListener);
         }
 
-        function onImageLoad() {
-            processImage(this)
+        function processImage(e) {
+            if (config.autospoilerImagesGif && reGif.test(e.src)) {
+                spoiler(e, 'gif')
+            } else if (e.width > config.autospoilerImagesWidth) {
+                spoiler(e, 'ширина ' + e.width + 'px')
+            } else if (e.height > config.autospoilerImagesHeight) {
+                spoiler(e, 'высота ' + e.height + 'px')
+            }
         }
 
         function spoiler(img, reason) {
@@ -1438,12 +1471,17 @@ if (config.autospoilerImages) {
         }
 
         $(function() {
-            process($('.comment-content .text'));
-        });
+            process($('.comment-content .text'))
+        })
 
         ls.hook.add('ls_comment_inject_after', function() {
-            process($('.comment-content .text', this));
-        });
+            process($('.comment-content .text', this))
+        })
+        
+        // XXX: for compatibility with andreymal's watch-edited-comments
+        ls.hook.add('ls_comments_load_after', function() {
+            process($('.comment-edited .text'))
+        })
     })();
 }
 
