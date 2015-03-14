@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    22
+// @version    23
 // @description    Автообновление комментов, возможность выбрать формат дат, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
@@ -50,6 +50,7 @@ var defaultConfig = {
     fixSameTopicCommentLinks: true,   // 9    true/false   При клике на ссылки вида http://tabun.everypony.ru/comments/<id> скроллить на коммент "#<id>", если он находится в этом же топике        
     autoLoadInterval: 30,             // 10.a Целое число  Если не false и не 0, добавляет галочку для автоподгрузки добавленных комментов (минимальный интервал - 30)
     autoLoadCheckedByDefault: false,  // 10.b true/false   Стоит ли эта галочка по умолчанию
+    autoLoadBlockClicks: 700,         // 10.c Целое число  Блокировать экран при автозагрузке (в миллисекундах)
     altToTitle: true,                 // 11   true/false   Копировать поле alt у картинок в поле title, чтобы при наведении появлялась подсказка
     alterMirrorsLinks: true,          // 12   true/false   Преобразовывать ссылки на другие зеркала табуна
     openInnerSpoilersWithShiftOrLongClick: true, // 13   true/false   Открывать вложенные спойлеры, если при нажатии на него был зажат шифт или клик был длинным (0.5 сек)
@@ -117,22 +118,26 @@ if (config.guiConfig) {
           , { // 10. Автоподгрузка комментов
                 build: function(container, cfg) {
                     this.txtInterval = $('<INPUT>', { type: 'text' }).css('width', 30).val(cfg.autoLoadInterval).prop('disabled', !cfg.autoLoadInterval);
+                    this.txtBlockClicks = $('<INPUT>', { type: 'text' }).css('width', 30).val(cfg.autoLoadBlockClicks).prop('disabled', !cfg.autoLoadInterval);
                     this.chkByDefault = $('<INPUT>', { type: 'checkbox' }).prop('checked', cfg.autoLoadCheckedByDefault);
                     this.chkEnable = $('<INPUT>', { type: 'checkbox' }).on('change', function() {
                         this.txtInterval.prop('disabled', !this.chkEnable.prop('checked'));
                         this.chkByDefault.prop('disabled', !this.chkEnable.prop('checked'));
+                        this.txtBlockClicks.prop('disabled', !this.chkEnable.prop('checked'));
                     }.bind(this)).prop('checked', !!cfg.autoLoadInterval);
                     container.append(
                         $('<LABEL>').append(this.chkEnable, "Добавить галочку для автоподгрузки комментов раз в "),
                         this.txtInterval,
                         " секунд (не меньше 30) ",
-                        $('<LABEL>').append(this.chkByDefault, "Включать её по умолчанию")
+                        $('<LABEL>').append(this.chkByDefault, "Включать её по умолчанию."),
+                        "<BR/>При автообновлении блокировать клики на ", this.txtBlockClicks, " миллисекунд"
                     );
                 },
                 getCfg: function() {
                     return {
                         autoLoadInterval: this.chkEnable.prop('checked') ? parseInt(this.txtInterval.val(), 10) : 0,
-                        autoLoadCheckedByDefault: this.chkByDefault.prop('checked')
+                        autoLoadCheckedByDefault: this.chkByDefault.prop('checked'),
+                        autoLoadBlockClicks: parseInt(this.txtBlockClicks.val(), 10)
                     }
                 }
             }
@@ -960,15 +965,22 @@ if (config.autoLoadInterval) {
             return Date.now ? Date.now() : new Date().getTime();
         }
 
-        var lockElement = $('<DIV>').css({
-            zIndex: 1000000,
-            position: 'fixed',
-            top: '0px', left: '0px',
-            width: '100%', height: '100%'
-        })
-
+        var period = Math.max(30, config.autoLoadInterval) * 1000
+          , arr = /(?:^|\s)ls\.comments\.load\(([0-9]+),\s*'(topic|talk)'\)/.exec($('#update-comments').attr('onclick')) || []
+          , topicId = arr[1]
+          , type = arr[2]
+          , needLockScreen = false
+          , lockElement
 
         function lockScreen() {
+            if (lockElement == null) {
+                lockElement = $('<DIV>').css({
+                    zIndex: 1000000,
+                    position: 'fixed',
+                    top: '0px', left: '0px',
+                    width: '100%', height: '100%'
+                })
+            }
             lockElement.prependTo(document.body)
         }
 
@@ -977,19 +989,13 @@ if (config.autoLoadInterval) {
         }
 
         ls.hook.add('ls_comments_load_after', function() {
-            if (needLockScreen) {
+            if (needLockScreen && config.autoLoadBlockClicks) {
                 lockScreen();
-                setTimeout(unlockScreen, 1000);
+                setTimeout(unlockScreen, config.autoLoadBlockClicks);
                 needLockScreen = false
             }
             // TODO adjust timer
         })
-
-        var period = Math.max(30, config.autoLoadInterval) * 1000
-          , arr = /(?:^|\s)ls\.comments\.load\(([0-9]+),\s*'(topic|talk)'\)/.exec($('#update-comments').attr('onclick')) || []
-          , topicId = arr[1]
-          , type = arr[2]
-          , needLockScreen = false
 
         if (topicId != null && type != null) {
 
