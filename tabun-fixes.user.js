@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Tabun fixes
-// @version    23
+// @version    24
 // @description    Автообновление комментов, возможность выбрать формат дат, а также добавление таймлайна комментов и несколько мелких улучшений для табуна. И всё это - с графическим конфигом!
 //
 // @updateURL https://github.com/lxyd/scripts/raw/master/tabun-fixes.meta.js
@@ -82,6 +82,7 @@ var defaultConfig = {
 if (config.guiConfig) {
     (function() {
         var lsKey = "tabun-fixes-config"
+          , divId = "tabun-fixes-gui-config"
           , subConfigs = []
           , cfgUi;
 
@@ -310,7 +311,7 @@ if (config.guiConfig) {
                 return false;
             }
             
-            cfgUi = $('<DIV>').css({
+            cfgUi = $('<DIV>').attr('id', divId).css({
                 position: 'fixed',
                 right: 6,
                 bottom: 30,
