@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name    Detarget
-// @version    1
+// @version    2
 // @description    Changes target="_blank" to target="_top" to prevent opening links in new tabs/windows
 // @include    http://*/*
 // @include    https://*/*
@@ -18,13 +18,19 @@
 })(document, function(window, document) {
 
     function onEvent(evt) {
-        var el = evt.srcElement || evt.originalTarget;
-
-        if (el.nodeName.toUpperCase() === 'A' && el.getAttribute('target') === '_blank') {
-            el.setAttribute('target', '_top');
+        var el = evt.srcElement || evt.originalTarget, nodeName;
+        
+        try {
+           nodeName = el.nodeName
+        } catch (err) {
+            return true
         }
 
-        return true;
+        if (nodeName.toUpperCase() === 'A' && el.getAttribute('target') === '_blank') {
+            el.setAttribute('target', '_top')
+        }
+
+        return true
     }
 
     document.addEventListener('click', onEvent);
