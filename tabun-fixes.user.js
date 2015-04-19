@@ -989,8 +989,9 @@ if (config.autoLoadInterval) {
             lockElement.remove()
         }
 
-        ls.hook.add('ls_comments_load_after', function() {
-            if (needLockScreen && config.autoLoadBlockClicks) {
+        ls.hook.add('ls_comments_load_after', function(_, _, _, _, obj) {
+            if (needLockScreen && config.autoLoadBlockClicks && obj.aComments.length > 0) {
+                // TODO check all new comments. If there are not any comment above mouse, don't block screen
                 lockScreen();
                 setTimeout(unlockScreen, config.autoLoadBlockClicks);
                 needLockScreen = false
