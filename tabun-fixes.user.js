@@ -979,7 +979,7 @@ if (config.autoLoadInterval) {
                     zIndex: 1000000,
                     position: 'fixed',
                     top: '0px', left: '0px',
-                    width: '100%', height: '100%'
+                    width: '100%', height: '100%',
                 })
             }
             lockElement.prependTo(document.body)
@@ -1000,9 +1000,12 @@ if (config.autoLoadInterval) {
                     }
                 }
                 if (refreshIsAuto && config.autoLoadBlockClicks && obj.aComments.length > 0) {
-                    // TODO check all new comments. If there are not any comment above mouse, don't block screen
-                    lockScreen();
-                    setTimeout(unlockScreen, config.autoLoadBlockClicks)
+                    // block screen only if some of the comments are above the lower bound of the screen
+                    var winBottom = $(window).scrollTop() + $(window).height();
+                    if (obj.aComments.some(function(e) { return $('#comment_id_'+e.id).offset().top < winBottom })) {
+                        lockScreen();
+                        setTimeout(unlockScreen, config.autoLoadBlockClicks)
+                    }
                 }
                 refreshIsAuto = false
             })
