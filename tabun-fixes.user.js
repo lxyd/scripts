@@ -970,7 +970,7 @@ if (config.autoLoadInterval) {
           , arr = /(?:^|\s)ls\.comments\.load\(([0-9]+),\s*'(topic|talk)'\)/.exec($('#update-comments').attr('onclick')) || []
           , topicId = arr[1]
           , type = arr[2]
-          , needLockScreen = false
+          , refreshIsAuto = false
           , lockElement
 
         function lockScreen() {
@@ -989,17 +989,23 @@ if (config.autoLoadInterval) {
             lockElement.remove()
         }
 
-        ls.hook.add('ls_comments_load_after', function(_, _, _, _, obj) {
-            if (needLockScreen && config.autoLoadBlockClicks && obj.aComments.length > 0) {
-                // TODO check all new comments. If there are not any comment above mouse, don't block screen
-                lockScreen();
-                setTimeout(unlockScreen, config.autoLoadBlockClicks);
-                needLockScreen = false
-            }
-            // TODO adjust timer
-        })
-
         if (topicId != null && type != null) {
+
+            ls.hook.add('ls_comments_load_after', function(_, _, _, _, obj) {
+                if (!refreshIsAuto) {
+                    if (idInterval) {
+                        // adjust timer to the new starting point
+                        window.clearInterval(idInterval);
+                        idInterval = window.setInterval(timerFunc, period)
+                    }
+                }
+                if (refreshIsAuto && config.autoLoadBlockClicks && obj.aComments.length > 0) {
+                    // TODO check all new comments. If there are not any comment above mouse, don't block screen
+                    lockScreen();
+                    setTimeout(unlockScreen, config.autoLoadBlockClicks)
+                }
+                refreshIsAuto = false
+            })
 
             var eventsToCatchInitialFocus = 'keydown mousedown focus mousemove'
               , focused = false
@@ -1008,7 +1014,7 @@ if (config.autoLoadInterval) {
               , needReloadingWhenFocused = false
               , idInterval = null
               , updateComments = function() {
-                    needLockScreen = true;
+                    refreshIsAuto = true;
                     ls.comments.load(topicId, type, undefined, true);
                 }
 
